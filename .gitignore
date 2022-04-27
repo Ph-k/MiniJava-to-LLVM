@@ -1,0 +1,13 @@
+*.class
+syntaxtree/
+visitor/
+JavaCharStream.java
+minijavaexample.java
+minijava-jtb.jj
+TokenMgrError.java
+Token.java
+ParseException.java
+MiniJavaParserTokenManager.java
+MiniJavaParserConstants.java
+MiniJavaParser.java
+
