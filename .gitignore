@@ -10,4 +10,6 @@ ParseException.java
 MiniJavaParserTokenManager.java
 MiniJavaParserConstants.java
 MiniJavaParser.java
+.vscode/
+
 
