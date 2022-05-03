@@ -25,14 +25,12 @@ public class ClassData {
     }
 
     private void variableOffsetIncreaser(String type){
-        if( type.contains("[]") ){ // array case
-            currentVariableOffset += 8;
-        }else if( type.equals("int") ){ // int case
+        if( type.equals("int") ){ // int case
             currentVariableOffset += 4;
         }else if( type.equals("boolean") ){ // boolean case
             currentVariableOffset += 1;
-        }else{
-            System.err.println("Warning, invalid offset increase type given!!");
+        }else{ // anything else, arrays, object references etc are considerred pointer-sized
+            currentVariableOffset += 8;
         }
     }
 
