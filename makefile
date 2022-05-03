@@ -5,7 +5,7 @@ compile:
 	java -jar ../javacc5.jar minijava-jtb.jj
 	javac Main.java
 clean:
-	find . -type f -not \( -name 'Main.java' -or -name 'minijava.jj' -or -name 'MyVisitor.java' -or -name 'Example.java' -or -name 'makefile' \) -delete
+	find . -type f -not \( -name 'ClassData.java' -or -name 'MethodData.java' -or -name 'SymbolTable.java' -or -name 'Main.java' -or -name 'minijava.jj' -or -name 'MyVisitor.java' -or -name 'Example.java' -or -name 'makefile' \) -delete
 	rmdir syntaxtree visitor
 #rm -f *.class *~
 #rm -rfv !("Main.java"|"minijava.jj"|"MyVisitor.java"|"makefile"|"Example.java")
