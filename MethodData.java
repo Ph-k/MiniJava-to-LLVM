@@ -5,10 +5,12 @@ public class MethodData {
     private Map<String, String> argumentsMap = new HashMap<String, String>();
     private Map<String, String> variableMap = new HashMap<String, String>();
     private String returnType, name;
+    private int offset;
 
-    MethodData(String givenName, String givenReturnType){
+    MethodData(String givenName, String givenReturnType, int givenOffest){
         returnType = givenReturnType;
         name = givenName;
+        offset = givenOffest;
     }
 
     public boolean addArgument(String argName, String argType){
@@ -27,8 +29,10 @@ public class MethodData {
         return variableMap.get(variableName);
     }
 
+    public int getOffset() {return offset;}
+
     public void print() {
-        System.out.print("\t\t" + returnType + " " + name + "(");
+        System.out.print("\t\t" + offset + " : " + returnType + " " + name + "(");
         if( argumentsMap.isEmpty() == false){
             for (Map.Entry<String,String> entry : argumentsMap.entrySet()){
                 System.out.print(entry.getKey() + " : " + entry.getValue() + ", ");

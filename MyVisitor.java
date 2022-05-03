@@ -280,7 +280,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return "array of boolean";
+        return "boolean[]";
         //return _ret;
     }
 
@@ -295,7 +295,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return "array of int";
+        return "int[]";
         //return _ret;
     }
 
