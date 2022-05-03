@@ -5,8 +5,10 @@ public class ClassData {
     private Map<String, MethodData> methodMap = new HashMap<String, MethodData>();
     private Map<String, String> variableMap = new HashMap<String, String>();
 
-    public boolean addMethod(String methodName){
-        return methodMap.put(methodName, new MethodData()) == null ? true : false ;
+    public MethodData addMethod(String methodName, String returnType){
+        MethodData newMethodData = new MethodData(methodName,returnType);
+        methodMap.put(methodName, newMethodData);
+        return newMethodData;
     }
 
     public MethodData findMethod(String methodName){

@@ -6,7 +6,7 @@ public class SymbolTable {
 
     public ClassData addClass(String className){
         ClassData newClassData = new ClassData();
-        classMap.put(className, newClassData)/* == null ? true : false*/;
+        classMap.put(className, newClassData);
         return newClassData;
     }
 
@@ -16,7 +16,7 @@ public class SymbolTable {
 
     public void printClasses(){
         for (Map.Entry<String,ClassData> entry : classMap.entrySet()){
-            System.out.println(entry.getKey());
+            System.out.println("Class " + entry.getKey());
             entry.getValue().print();
         }
     }

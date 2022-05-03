@@ -10,7 +10,12 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
 
     private int parenCounter = 0;
 
-    private ClassData lastVisitedClass;
+    private class LastVisited{
+        public ClassData classRef = null;
+        public MethodData method = null;
+    }
+
+    private LastVisited lastVisited = new LastVisited();
     
     public int getParensCounter(){ return this.parenCounter; }
 
@@ -19,17 +24,15 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
     * f1 -> ( TypeDeclaration() )*
     * f2 -> <EOF>
      */
-    /*@Override
+    @Override
     public String visit(Goal n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
-        String classname = n.f1.accept(this, argu);
+        n.f1.accept(this, argu);
         n.f2.accept(this, argu);
 
-        symbolTable.addClass(classname);
-
         return _ret;
-    }*/
+    }
 
     /**
      * f0 -> "class"
@@ -56,16 +59,19 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
+        lastVisited.classRef = symbolTable.addClass(className);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
+        lastVisited.method = lastVisited.classRef.addMethod("main","void");
         n.f7.accept(this, argu);
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
         n.f10.accept(this, argu);
-        n.f11.accept(this, argu);
+        String argName = n.f11.accept(this, argu);
+        lastVisited.method.addArgument(argName, "String[]");
         n.f12.accept(this, argu);
         n.f13.accept(this, argu);
         n.f14.accept(this, argu);
@@ -73,7 +79,8 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         n.f16.accept(this, argu);
         n.f17.accept(this, argu);
 
-        lastVisitedClass = symbolTable.addClass(className);
+        lastVisited.classRef = null;
+        lastVisited.method = null;
 
         return _ret;
     }
@@ -100,13 +107,14 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
+        lastVisited.classRef = symbolTable.addClass(className);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
 
-        lastVisitedClass = symbolTable.addClass(className);
-
+        
+        lastVisited.classRef = null;
         return _ret;
     }
 
@@ -125,6 +133,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
+        lastVisited.classRef = symbolTable.addClass(className);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
@@ -132,7 +141,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         n.f6.accept(this, argu);
         n.f7.accept(this, argu);
 
-        lastVisitedClass = symbolTable.addClass(className);
+        lastVisited.classRef = null;
 
         return _ret;
     }
@@ -149,7 +158,11 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String varName = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
 
-        lastVisitedClass.addVariable(varName,varType);
+        if( lastVisited.method != null ){
+            lastVisited.method.addVariable(varName,varType);
+        }else{
+            lastVisited.classRef.addVariable(varName,varType);
+        }
 
         return _ret;
     }
@@ -173,8 +186,9 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
     public String visit(MethodDeclaration n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String returnType = n.f1.accept(this, argu);
+        String methodName = n.f2.accept(this, argu);
+        lastVisited.method = lastVisited.classRef.addMethod(methodName,returnType);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
@@ -185,6 +199,8 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         n.f10.accept(this, argu);
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
+
+        lastVisited.method = null;
         return _ret;
     }
 
@@ -207,8 +223,9 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(FormalParameter n, Void argu) throws Exception {
         String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String argType = n.f0.accept(this, argu);
+        String argName = n.f1.accept(this, argu);
+        lastVisited.method.addArgument(argName, argType);
         return _ret;
     }
 
@@ -263,7 +280,8 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "array of boolean";
+        //return _ret;
     }
 
     /**
@@ -277,7 +295,8 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "array of int";
+        //return _ret;
     }
 
     /**
@@ -285,7 +304,8 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
      */
     @Override
     public String visit(BooleanType n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        n.f0.accept(this, argu);
+        return "boolean";
     }
 
     /**
@@ -293,7 +313,8 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
      */
     @Override
     public String visit(IntegerType n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        n.f0.accept(this, argu);
+        return "int";
     }
 
     /**
