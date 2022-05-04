@@ -1,13 +1,10 @@
 import java.util.Map;
-
-import javax.crypto.ExemptionMechanism;
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class MethodData {
-    private Map<String, String> argumentsMap = new HashMap<String, String>();
-    private Map<String, String> variableMap = new LinkedHashMap<String, String>();
+    private Map<String, String> argumentsMap = new LinkedHashMap<String, String>();
+    private Map<String, String> variableMap = new HashMap<String, String>();
     private String returnType, name;
     private int offset;
 
@@ -44,7 +41,16 @@ public class MethodData {
     public int getOffset() {return offset;}
 
     public boolean argsEquals(MethodData givenMethodData){
-        return argumentsMap.equals(givenMethodData.argumentsMap);
+        if(this.argumentsMap.size() != givenMethodData.argumentsMap.size()) return false;  
+        int index = 0;
+        Object[] parrentAgrs = givenMethodData.argumentsMap.values().toArray();
+        for (Map.Entry<String, String> entry : this.argumentsMap.entrySet()) {
+            if (parrentAgrs[index] != entry.getValue()){
+                return false;
+            }
+            index++;
+        }
+        return true;
     }
 
     public void print() {

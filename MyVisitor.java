@@ -278,7 +278,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
      */
     @Override
     public String visit(BooleanArrayType n, Void argu) throws Exception {
-        String _ret=null;
+        //String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -293,7 +293,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
      */
     @Override
     public String visit(IntegerArrayType n, Void argu) throws Exception {
-        String _ret=null;
+        //String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
