@@ -135,7 +135,9 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String className = n.f1.accept(this, argu);
         lastVisited.classRef = symbolTable.addClass(className);
         n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
+        String parrentClassName = n.f3.accept(this, argu);
+        ClassData parrentClass = symbolTable.findClass(parrentClassName);
+        lastVisited.classRef.setOffsets(parrentClass.getMethodOffset(), parrentClass.getVariableOffset()); 
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
