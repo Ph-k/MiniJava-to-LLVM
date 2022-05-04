@@ -1,9 +1,13 @@
 import java.util.Map;
+
+import javax.crypto.ExemptionMechanism;
+
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class MethodData {
     private Map<String, String> argumentsMap = new HashMap<String, String>();
-    private Map<String, String> variableMap = new HashMap<String, String>();
+    private Map<String, String> variableMap = new LinkedHashMap<String, String>();
     private String returnType, name;
     private int offset;
 
@@ -13,16 +17,24 @@ public class MethodData {
         offset = givenOffest;
     }
 
-    public boolean addArgument(String argName, String argType){
-        return argumentsMap.put(argName, argType) == null ? true : false ;
+    public boolean addArgument(String argName, String argType) throws Exception{
+        if(argumentsMap.get(argName) == null){
+            return argumentsMap.put(argName, argType) == null ? true : false ;
+        }else{
+            throw new Exception("Redefinition of argument!");
+        }
     }
 
     public String findArgument(String argName){
         return argumentsMap.get(argName);
     }
 
-    public boolean addVariable(String variableName, String variableType){
-        return variableMap.put(variableName, variableType) == null ? true : false ;
+    public boolean addVariable(String variableName, String variableType) throws Exception{
+        if(variableMap.get(variableName) == null && argumentsMap.get(variableName) == null){
+            return variableMap.put(variableName, variableType) == null ? true : false ;
+        }else{
+            throw new Exception("Redefinition of variable!");
+        }
     }
 
     public String findVariable(String variableName){
@@ -30,6 +42,10 @@ public class MethodData {
     }
 
     public int getOffset() {return offset;}
+
+    public boolean argsEquals(MethodData givenMethodData){
+        return argumentsMap.equals(givenMethodData.argumentsMap);
+    }
 
     public void print() {
         System.out.print("\t\t" + offset + " : " + returnType + " " + name + "(");

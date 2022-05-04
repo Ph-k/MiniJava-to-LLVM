@@ -1,10 +1,13 @@
 import java.util.Map;
+import java.io.EOFException;
 import java.util.HashMap;
 
+// For classes that do NOT extend
 public class ClassData {
-    private Map<String, MethodData> methodMap = new HashMap<String, MethodData>();
-    private Map<String, tupleTypeOffset> variableMap = new HashMap<String, tupleTypeOffset>();
-    private int currentMethodOffset = 0, currentVariableOffset = 0;
+    protected Map<String, MethodData> methodMap = new HashMap<String, MethodData>();
+    protected Map<String, tupleTypeOffset> variableMap = new HashMap<String, tupleTypeOffset>();
+    protected int currentMethodOffset = 0, currentVariableOffset = 0;
+
 
     public int getMethodOffset(){
         return currentMethodOffset;
@@ -14,17 +17,11 @@ public class ClassData {
         return currentVariableOffset;
     }
 
-    // Used if the class extends
-    public void setOffsets(int givenCurrentMethodOffset, int givenCurrentVariableOffset){
-        currentMethodOffset = givenCurrentMethodOffset;
-        currentVariableOffset = givenCurrentVariableOffset;
-    }
-
-    private void methodOffsetIncreaser(){
+    protected void methodOffsetIncreaser(){
         currentMethodOffset += 8;
     }
 
-    private void variableOffsetIncreaser(String type){
+    protected void variableOffsetIncreaser(String type){
         if( type.equals("int") ){ // int case
             currentVariableOffset += 4;
         }else if( type.equals("boolean") ){ // boolean case
@@ -34,10 +31,17 @@ public class ClassData {
         }
     }
 
-    public MethodData addMethod(String methodName, String returnType){
+    public MethodData addMethod(String methodName, String returnType) throws Exception{
         MethodData newMethodData = new MethodData(methodName,returnType,currentMethodOffset);
-        methodOffsetIncreaser();
-        methodMap.put(methodName, newMethodData);
+
+        // Adding the method only if another with the same name has not been declared
+        if( methodMap.get(methodName) == null ){
+            methodOffsetIncreaser();
+            methodMap.put(methodName, newMethodData);
+        }else{
+            throw new Exception("Redeclaration of method!");
+        }
+
         return newMethodData;
     }
 
@@ -45,10 +49,17 @@ public class ClassData {
         return methodMap.get(methodName);
     }
 
-    public boolean addVariable(String variableName, String variableType){
+    public boolean addVariable(String variableName, String variableType) throws Exception{
         int variableOffset = currentVariableOffset;
-        variableOffsetIncreaser(variableType);
-        return variableMap.put(variableName, new tupleTypeOffset(variableType,variableOffset) ) == null ? true : false ;
+
+        // Adding the class only if another with the same name has not been declared
+        if( variableMap.get(variableName) == null ){
+            variableMap.put(variableName,  new tupleTypeOffset(variableType,variableOffset));
+            variableOffsetIncreaser(variableType);
+        }else{
+            throw new Exception("Redeclaration of variable!");
+        }
+        return true;
     }
 
     public String findVariable(String variableName){
@@ -76,5 +87,10 @@ public class ClassData {
             offset = givenOffset;
         }
     }
+
+    public boolean methodsCheck() throws Exception{
+        throw new Exception("You called a ExtendedClassData method from a simple ClassData!");
+    }
+
 }
 

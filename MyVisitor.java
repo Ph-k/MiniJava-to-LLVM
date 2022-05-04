@@ -59,7 +59,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
-        lastVisited.classRef = symbolTable.addClass(className);
+        lastVisited.classRef = symbolTable.addClass(className, null);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
@@ -107,7 +107,7 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
-        lastVisited.classRef = symbolTable.addClass(className);
+        lastVisited.classRef = symbolTable.addClass(className, null);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
@@ -133,16 +133,16 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
-        lastVisited.classRef = symbolTable.addClass(className);
         n.f2.accept(this, argu);
         String parrentClassName = n.f3.accept(this, argu);
         ClassData parrentClass = symbolTable.findClass(parrentClassName);
-        lastVisited.classRef.setOffsets(parrentClass.getMethodOffset(), parrentClass.getVariableOffset()); 
+        lastVisited.classRef = symbolTable.addClass(className, parrentClass);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         n.f7.accept(this, argu);
 
+        lastVisited.classRef.methodsCheck();
         lastVisited.classRef = null;
 
         return _ret;

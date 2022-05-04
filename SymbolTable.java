@@ -4,9 +4,21 @@ import java.util.HashMap;
 public class SymbolTable {
     private Map<String, ClassData> classMap = new HashMap<String, ClassData>();
 
-    public ClassData addClass(String className){
-        ClassData newClassData = new ClassData();
-        classMap.put(className, newClassData);
+    public ClassData addClass(String className, ClassData parrentClassRef) throws Exception{
+        ClassData newClassData;
+        if(parrentClassRef == null){
+            newClassData = new ClassData();
+        }else{
+            newClassData = new ExtendedClassData(parrentClassRef);
+        }
+
+        // Adding the class only if another with the same name has not been declared
+        if( classMap.get(className) == null ){
+            classMap.put(className, newClassData);
+        }else{
+            throw new Exception("Redeclaration of class!");
+        }
+
         return newClassData;
     }
 
@@ -20,5 +32,4 @@ public class SymbolTable {
             entry.getValue().print();
         }
     }
-
 }
