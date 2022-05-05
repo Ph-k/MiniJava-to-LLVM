@@ -1,14 +1,12 @@
 import syntaxtree.*;
 import visitor.GJDepthFirst;
 
-public class MyVisitor extends GJDepthFirst<String, Void>{
+public class FirstVisitor extends GJDepthFirst<String, Void>{
 
     private SymbolTable symbolTable;
-    public MyVisitor(SymbolTable givenSymbolTable){
+    public FirstVisitor(SymbolTable givenSymbolTable){
         symbolTable = givenSymbolTable;
     }
-
-    private int parenCounter = 0;
 
     private class LastVisited{
         public ClassData classRef = null;
@@ -16,14 +14,12 @@ public class MyVisitor extends GJDepthFirst<String, Void>{
     }
 
     private LastVisited lastVisited = new LastVisited();
-    
-    public int getParensCounter(){ return this.parenCounter; }
 
     /**
     * f0 -> MainClass()
     * f1 -> ( TypeDeclaration() )*
     * f2 -> <EOF>
-     */
+    */
     @Override
     public String visit(Goal n, Void argu) throws Exception {
         String _ret=null;

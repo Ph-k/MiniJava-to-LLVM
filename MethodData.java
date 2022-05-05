@@ -18,6 +18,7 @@ public class MethodData {
         if(argumentsMap.get(argName) == null){
             return argumentsMap.put(argName, argType) == null ? true : false ;
         }else{
+            System.out.println("For arg: " + argName);
             throw new Exception("Redefinition of argument!");
         }
     }
@@ -36,6 +37,11 @@ public class MethodData {
 
     public String findVariable(String variableName){
         return variableMap.get(variableName);
+    }
+
+    public String findArngNVariable(String varName) {
+        String varType = findVariable(varName);
+        return (varType != null) ?  varType : findArgument(varName);
     }
 
     public int getOffset() {return offset;}
@@ -68,4 +74,5 @@ public class MethodData {
             }
         }
     }
+
 }

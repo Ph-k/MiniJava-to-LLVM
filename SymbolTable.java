@@ -32,4 +32,24 @@ public class SymbolTable {
             entry.getValue().print();
         }
     }
+
+    public String findType(ClassData classRef, MethodData methodRef, String varName){
+        // First we check if we have a number or a boolean and nor a variable
+        if( varName.matches("[0-9]+") || varName.equals("int") ){
+            // if the varName has only numbers, it's not a variable but an int
+            return "int";
+        }else if( varName.equals("true") || varName.equals("false") || varName.equals("boolean") ){
+            // if the varName is true or false, it's not a variable but a bool
+            return "boolean";
+        }
+
+        // Otherwise we find the type of the variable
+        String type;
+        if( methodRef != null && ( (type = methodRef.findArngNVariable(varName)) != null )){
+            return type;            
+        }else if( (type = classRef.findVariable(varName)) != null ){
+            return type;
+        }
+        return null;
+    }
 }

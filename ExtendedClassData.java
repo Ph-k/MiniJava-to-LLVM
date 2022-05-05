@@ -24,6 +24,7 @@ public class ExtendedClassData extends ClassData {
         if( methodMap.get(methodName) == null ){
             methodMap.put(methodName, newMethodData);
         }else{
+            System.out.println("For method: " + methodName);
             throw new Exception("Redeclaration of method!");
         }
 

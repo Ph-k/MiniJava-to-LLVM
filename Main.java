@@ -1,5 +1,4 @@
 import syntaxtree.*;
-import visitor.*;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -24,10 +23,13 @@ public class Main {
             System.err.println("Program parsed successfully.");
 
             SymbolTable symbolTable = new SymbolTable();
-            MyVisitor eval = new MyVisitor(symbolTable);
-            root.accept(eval, null);
+            FirstVisitor eval1 = new FirstVisitor(symbolTable);
+            root.accept(eval1, null);
 
-            System.out.println("L parens: " + eval.getParensCounter() );
+            SecondVisitor eval2 = new SecondVisitor(symbolTable);
+            root.accept(eval2, null);
+
+
             symbolTable.printClasses();
         }
         catch(ParseException ex){

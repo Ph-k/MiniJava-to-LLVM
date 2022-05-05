@@ -62,7 +62,8 @@ public class ClassData {
     }
 
     public String findVariable(String variableName){
-        return variableMap.get(variableName).variableType;
+        tupleTypeOffset typeNoffset = variableMap.get(variableName);
+        return (typeNoffset != null)? typeNoffset.variableType : null ;
     }
 
     public void print(){
