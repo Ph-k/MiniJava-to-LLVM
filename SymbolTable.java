@@ -7,9 +7,9 @@ public class SymbolTable {
     public ClassData addClass(String className, ClassData parrentClassRef) throws Exception{
         ClassData newClassData;
         if(parrentClassRef == null){
-            newClassData = new ClassData();
+            newClassData = new ClassData(className);
         }else{
-            newClassData = new ExtendedClassData(parrentClassRef);
+            newClassData = new ExtendedClassData(className, parrentClassRef);
         }
 
         // Adding the class only if another with the same name has not been declared
@@ -33,7 +33,7 @@ public class SymbolTable {
         }
     }
 
-    public String findType(ClassData classRef, MethodData methodRef, String varName){
+    public String findVarType(ClassData classRef, MethodData methodRef, String varName){
         // First we check if we have a number or a boolean and nor a variable
         if( varName.matches("[0-9]+") || varName.equals("int") ){
             // if the varName has only numbers, it's not a variable but an int
@@ -50,6 +50,8 @@ public class SymbolTable {
         }else if( (type = classRef.findVariable(varName)) != null ){
             return type;
         }
-        return null;
+
+        return varName;
     }
+
 }

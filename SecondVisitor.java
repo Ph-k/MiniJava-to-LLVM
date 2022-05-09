@@ -1,4 +1,7 @@
+
 import syntaxtree.*;
+import java.util.List;
+import java.util.ArrayList;
 import visitor.GJDepthFirst;
 
 public class SecondVisitor extends GJDepthFirst<String, Void>{
@@ -14,6 +17,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
     private LastVisited lastVisited = new LastVisited();
 
+    private List<String> argumentList = new ArrayList<String>();
+
     /**
     * f0 -> MainClass()
     * f1 -> ( TypeDeclaration() )*
@@ -27,6 +32,14 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f2.accept(this, argu);
 
         return _ret;
+    }
+
+    private boolean isBoolean(String type){
+        return type.equals("boolean") || type.equals("true") || type.equals("false");
+    }
+
+    private boolean isInt(String type){
+        return type.equals("int") || type.matches("[0-9]+");
     }
 
     /**
@@ -346,12 +359,13 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(AssignmentStatement n, Void argu) throws Exception {
         String _ret=null;
-        String identifier1 = n.f0.accept(this, argu);
+        String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        String identifier2 =  n.f2.accept(this, argu);
+        String type2 =  n.f2.accept(this, argu);
         n.f3.accept(this, argu);
-        String type1 = symbolTable.findType(lastVisited.classRef, lastVisited.method, identifier1),
-               type2 = symbolTable.findType(lastVisited.classRef, lastVisited.method, identifier2);
+
+        type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
+        type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
         if(! type1.equals(type2) ){
             throw new Exception("Cannot cast " + type1 + " to " + type2);
         }
@@ -414,9 +428,13 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String expressionType = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
+
+        if( !isBoolean(expressionType) ){
+            throw new Exception("Expression of while loop cannot be of type: " + expressionType + " it must be boolean");
+        }
         return _ret;
     }
 
@@ -461,11 +479,15 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
      */
     @Override
     public String visit(AndExpression n, Void argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
+        //String _ret=null;
+        String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        String type2 = n.f2.accept(this, argu);
+        if( !isBoolean(type1) || !isBoolean(type2) ){
+            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only boolean and boolean is allowed");
+        }
+        return "boolean";
+        //return _ret;
     }
 
     /**
@@ -479,7 +501,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String type2 = n.f2.accept(this, argu);
-        if( (!type1.equals("int")) || (!type1.equals("int")) ){
+        if( !isInt(type1) || !isInt(type2) ){
             throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "int";
@@ -496,8 +518,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String type2 = n.f2.accept(this, argu);
-        if( (!type1.equals("int")) || (!type1.equals("int")) ){
-            throw new Exception("Cannot add " + type1 + " with " + type2 + " only int and int is allowed");
+        if( !isInt(type1) || !isInt(type2) ){
+            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "int";
     }
@@ -513,8 +535,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String type2 = n.f2.accept(this, argu);
-        if( (!type1.equals("int")) || (!type1.equals("int")) ){
-            throw new Exception("Cannot substruct " + type1 + " with " + type2 + " only int and int is allowed");
+        if( !isInt(type1) || !isInt(type2) ){
+            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "int";
     }
@@ -530,8 +552,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String type2 = n.f2.accept(this, argu);
-        if( (!type1.equals("int")) || (!type1.equals("int")) ){
-            throw new Exception("Cannot multiply " + type1 + " with " + type2 + " only int and int is allowed");
+        if( !isInt(type1) || !isInt(type2) ){
+            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "int";
     }
@@ -549,11 +571,11 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f1.accept(this, argu);
         String indexType = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
-        if( !indexType.equals("int") ){
-            throw new Exception("Index cannot be " + indexType + " must be int");
+        if( isInt(indexType) ){
+            throw new Exception("Index cannot be " + indexType + ", only int allowed!");
         }
 
-        type1 = symbolTable.findType(lastVisited.classRef, lastVisited.method, type1);
+        type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
 
         if( (!type1.equals("int[]")) && !(type1.equals("boolean[]")) ){
             throw new Exception("Array can not be " + indexType + " must be int or boolean");
@@ -592,13 +614,34 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(MessageSend n, Void argu) throws Exception {
         String _ret=null;
-        n.f0.accept(this, argu);
+        String className =  n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String methodName = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
-        return _ret;
+
+        ClassData classRef = symbolTable.findClass(className);
+        if( classRef == null ){
+            throw new Exception("Class " + className + " has not been declared!");
+        }
+
+
+        MethodData methodRef = classRef.findMethod(methodName);
+        if( methodRef == null ){
+            throw new Exception("Method " + methodName + " is not a member of " + className);
+        }
+
+        String argType;
+        int i = 0;
+        for (String arg : argumentList) {
+            argType = symbolTable.findVarType(classRef, methodRef, arg);
+            if(!argType.equals(methodRef.findNArng(i++))){
+                throw new Exception("Parameter " + arg + " for " + methodName + " is " + argType + ". Was expecting " + methodRef.findNArng(i-1));
+            }
+        }   
+
+        return methodRef.getReturnType();
     }
 
     /**
@@ -608,7 +651,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(ExpressionList n, Void argu) throws Exception {
         String _ret=null;
-        n.f0.accept(this, argu);
+        String arg = n.f0.accept(this, argu);
+        argumentList.add(arg);
         n.f1.accept(this, argu);
         return _ret;
     }
@@ -629,7 +673,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     public String visit(ExpressionTerm n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String arg = n.f1.accept(this, argu);
+        argumentList.add(arg);
         return _ret;
     }
 
@@ -656,7 +701,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     public String visit(PrimaryExpression n, Void argu) throws Exception {
         String _f0 = n.f0.accept(this, argu);
         if ( _f0.equals("this") ) return "this";
-        return symbolTable.findType(lastVisited.classRef, lastVisited.method, _f0);
+        return _f0;
     }
 
     /**
@@ -699,7 +744,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(ThisExpression n, Void argu) throws Exception {
         n.f0.accept(this, argu);
-        return "this";
+        return lastVisited.classRef.getName();
     }
 
     /**

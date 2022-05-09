@@ -44,6 +44,14 @@ public class MethodData {
         return (varType != null) ?  varType : findArgument(varName);
     }
 
+    public String findNArng(int index) {
+        return argumentsMap.values().toArray()[index].toString();
+    }
+
+    public String getReturnType(){
+        return returnType;
+    }
+
     public int getOffset() {return offset;}
 
     public boolean argsEquals(MethodData givenMethodData){

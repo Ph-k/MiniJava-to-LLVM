@@ -4,7 +4,8 @@ import java.util.Map;
 public class ExtendedClassData extends ClassData {
     private ClassData parrentClassRef;
 
-    ExtendedClassData(ClassData givenParrentClassRef){
+    ExtendedClassData(String className, ClassData givenParrentClassRef){
+        super(className);
         parrentClassRef = givenParrentClassRef;
         currentMethodOffset = givenParrentClassRef.getMethodOffset();
         currentVariableOffset = givenParrentClassRef.getVariableOffset();

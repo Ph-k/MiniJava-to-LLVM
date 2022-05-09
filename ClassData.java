@@ -6,7 +6,15 @@ public class ClassData {
     protected Map<String, MethodData> methodMap = new HashMap<String, MethodData>();
     protected Map<String, tupleTypeOffset> variableMap = new HashMap<String, tupleTypeOffset>();
     protected int currentMethodOffset = 0, currentVariableOffset = 0;
+    private String name;
 
+    ClassData(String givenName){
+        name = givenName;
+    }
+
+    public String getName(){
+        return name;
+    }
 
     public int getMethodOffset(){
         return currentMethodOffset;
