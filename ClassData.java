@@ -6,7 +6,7 @@ public class ClassData {
     protected Map<String, MethodData> methodMap = new HashMap<String, MethodData>();
     protected Map<String, tupleTypeOffset> variableMap = new HashMap<String, tupleTypeOffset>();
     protected int currentMethodOffset = 0, currentVariableOffset = 0;
-    private String name;
+    protected String name;
 
     ClassData(String givenName){
         name = givenName;
@@ -74,6 +74,10 @@ public class ClassData {
         return (typeNoffset != null)? typeNoffset.variableType : null ;
     }
 
+    public boolean checkParrentType(String type){
+        return type.equals(name);
+    }
+
     public void print(){
         System.out.println("\tVariables:");
         for (Map.Entry<String,tupleTypeOffset> entry : variableMap.entrySet()){
@@ -86,9 +90,9 @@ public class ClassData {
     }
 
     // custom tuple class to save both the type of variable and it's offset
-    private class tupleTypeOffset {
-        private String variableType;
-        private int offset;
+    protected class tupleTypeOffset {
+        protected String variableType;
+        protected int offset;
     
         tupleTypeOffset(String givenVariableType, int givenOffset){
             variableType = givenVariableType;

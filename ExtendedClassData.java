@@ -11,6 +11,24 @@ public class ExtendedClassData extends ClassData {
         currentVariableOffset = givenParrentClassRef.getVariableOffset();
     }
 
+    public MethodData findMethod(String methodName){
+        MethodData method = methodMap.get(methodName);
+        // Searching to parrent if the method does not exist in child
+        if(method != null){
+            return method;
+        }else
+            return parrentClassRef.findMethod(methodName);
+    }
+
+    public String findVariable(String variableName){
+        tupleTypeOffset typeNoffset = variableMap.get(variableName);
+        // Searching to parrent if the method does not exist in child
+        if( typeNoffset != null){ 
+            return typeNoffset.variableType;
+        }else
+            return parrentClassRef.findVariable(variableName);
+    }
+
     @Override
     public MethodData addMethod(String methodName, String returnType) throws Exception{
         MethodData parrentClassMethod = parrentClassRef.findMethod(methodName);
@@ -39,13 +57,20 @@ public class ExtendedClassData extends ClassData {
             parrentMethod = parrentClassRef.methodMap.get(entry.getKey());
             if(  parrentMethod != null ){
                 if( entry.getValue().argsEquals(parrentMethod) == false){
-                    System.out.println("On function: " + entry.getKey());
-                    throw new Exception("Overloading not allowed!");
+                    System.out.println("On method: " + entry.getKey());
+                    throw new Exception("Overloading not allowed (different arguments)!");
                     //return false;
+                }else if ( entry.getValue().getReturnType().equals(parrentMethod.getReturnType()) == false){
+                    System.out.println("On method: " + entry.getKey());
+                    throw new Exception("Overloading not allowed (different return type)!");
                 }
             }
         }
         return true;
+    }
+
+    public boolean checkParrentType(String type){
+        return name.equals(type) || parrentClassRef.checkParrentType(type);
     }
 
 }

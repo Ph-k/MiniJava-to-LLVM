@@ -41,7 +41,10 @@ public class SymbolTable {
         }else if( varName.equals("true") || varName.equals("false") || varName.equals("boolean") ){
             // if the varName is true or false, it's not a variable but a bool
             return "boolean";
-        }
+        }/*else if( varName.equals("boolean[]") || varName.equals("int[]") ){
+            // array type
+            return varName;
+        }*/
 
         // Otherwise we find the type of the variable
         String type;
@@ -52,6 +55,33 @@ public class SymbolTable {
         }
 
         return varName;
+    }
+
+    public boolean typeExists(String type){
+        return type.equals("int") || type.equals("boolean") || type.equals("boolean[]") || type.equals("int[]") || ( classMap.get(type) != null );
+    }
+
+    public boolean typeEquality(String type1,String type2){
+        ClassData class1,class2;
+        if( type1.equals(type2) ){
+            return true;
+        } else {
+            class1 = classMap.get(type1);
+            class2 = classMap.get(type2);
+
+            /*if( class1!=null && class2!=null){
+                return class1.checkParrentType(type2) || class2.checkParrentType(type1);
+            }else if(class1==null && class2!=null){
+                return class2.checkParrentType(type1);
+            }else if(class1!=null && class2==null){
+                return class1.checkParrentType(type2);
+            }else{
+                return false;
+            }*/
+            if( class2!=null)
+                return class2.checkParrentType(type1);
+        }
+        return false;
     }
 
 }
