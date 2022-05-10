@@ -1,9 +1,59 @@
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class MethodData {
-    private Map<String, String> argumentsMap = new LinkedHashMap<String, String>();
+    ArrayList<String> argumentNames = new ArrayList<String>();
+    ArrayList<String> argumentTypes = new ArrayList<String>();
+    private class ArgumentsMap{
+        ArrayList<String> argumentNames = new ArrayList<String>();
+        ArrayList<String> argumentTypes = new ArrayList<String>();
+        public boolean put(String argName, String argType){
+            argumentNames.add(argName);
+            argumentTypes.add(argType);
+            return true;
+        }
+
+        public String get(String argName){
+            int index = argumentNames.indexOf(argName);
+            if( index != -1 ){
+                return argumentTypes.get(index);
+            }else return null;
+        }
+
+        public String get(int argIndex){
+            String arg;
+            try{
+                arg = argumentTypes.get(argIndex);
+            }catch (Exception e) {
+                arg = null;
+            }
+
+            return arg;
+        }
+
+        public String getName(int argIndex){
+            String arg;
+            try{
+                arg = argumentNames.get(argIndex);
+            }catch (Exception e) {
+                arg = null;
+            }
+
+            return arg;
+        }
+
+        public int size(){
+            return argumentNames.size();
+        }
+
+        public boolean isEmpty(){
+            return argumentNames.size() == 0 ? true : false;
+        }
+    }  
+    ArgumentsMap argumentsMap = new ArgumentsMap();
+    //private Map<String, String> argumentsMap = new LinkedHashMap<String, String>();
     private Map<String, String> variableMap = new HashMap<String, String>();
     private String returnType, name;
     private int offset;
@@ -16,7 +66,7 @@ public class MethodData {
 
     public boolean addArgument(String argName, String argType) throws Exception{
         if(argumentsMap.get(argName) == null){
-            return argumentsMap.put(argName, argType) == null ? true : false ;
+            return argumentsMap.put(argName, argType)/* == null ? true : false*/ ;
         }else{
             System.out.println("For arg: " + argName);
             throw new Exception("Redefinition of argument!");
@@ -45,7 +95,7 @@ public class MethodData {
     }
 
     public String findNArng(int index) {
-        return argumentsMap.values().toArray()[index].toString();
+        return argumentsMap.get(index);
     }
 
     public String getReturnType(){
@@ -56,13 +106,11 @@ public class MethodData {
 
     public boolean argsEquals(MethodData givenMethodData){
         if(this.argumentsMap.size() != givenMethodData.argumentsMap.size()) return false;  
-        int index = 0;
-        Object[] parrentAgrs = givenMethodData.argumentsMap.values().toArray();
-        for (Map.Entry<String, String> entry : this.argumentsMap.entrySet()) {
-            if (parrentAgrs[index] != entry.getValue()){
+       
+        for (int i = 0; i<this.argumentsMap.size(); i++) {
+            if( !argumentsMap.get(i).equals( givenMethodData.argumentsMap.get(i) ) ){
                 return false;
             }
-            index++;
         }
         return true;
     }
@@ -70,8 +118,8 @@ public class MethodData {
     public void print() {
         System.out.print("\t\t" + offset + " : " + returnType + " " + name + "(");
         if( argumentsMap.isEmpty() == false){
-            for (Map.Entry<String,String> entry : argumentsMap.entrySet()){
-                System.out.print(entry.getKey() + " : " + entry.getValue() + ", ");
+            for (int i = 0; i<this.argumentsMap.size(); i++) {
+                System.out.print(argumentsMap.getName(i) + " : " + argumentsMap.get(i) + ", ");
             }
         }
         System.out.println(")");
@@ -81,6 +129,10 @@ public class MethodData {
                 System.out.println("\t\t\t\t" + entry.getKey() + " : " + entry.getValue());
             }
         }
+    }
+
+    public String getName() {
+        return name;
     }
 
 }

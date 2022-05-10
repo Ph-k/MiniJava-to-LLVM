@@ -614,34 +614,34 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(MessageSend n, Void argu) throws Exception {
         String _ret=null;
-        String className =  n.f0.accept(this, argu);
+        String callingClassName =  n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        String methodName = n.f2.accept(this, argu);
+        String callingMethodName = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
 
-        ClassData classRef = symbolTable.findClass(className);
-        if( classRef == null ){
-            throw new Exception("Class " + className + " has not been declared!");
+        ClassData callingClassRef = symbolTable.findClass(callingClassName);
+        if( callingClassRef == null ){
+            throw new Exception("Class " + callingClassName + " has not been declared!");
         }
 
 
-        MethodData methodRef = classRef.findMethod(methodName);
-        if( methodRef == null ){
-            throw new Exception("Method " + methodName + " is not a member of " + className);
+        MethodData callingMethodRef = callingClassRef.findMethod(callingMethodName);
+        if( callingMethodRef == null ){
+            throw new Exception("Method " + callingMethodName + " is not a member of " + callingClassRef);
         }
 
         String argType;
         int i = 0;
         for (String arg : argumentList) {
-            argType = symbolTable.findVarType(classRef, methodRef, arg);
-            if(!argType.equals(methodRef.findNArng(i++))){
-                throw new Exception("Parameter " + arg + " for " + methodName + " is " + argType + ". Was expecting " + methodRef.findNArng(i-1));
+            argType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, arg);
+            if(!argType.equals(callingMethodRef.findNArng(i++))){
+                throw new Exception("Parameter " + String.valueOf(i) + " for " + callingMethodName + " is " + argType + ". Was expecting " + callingMethodRef.findNArng(i-1));
             }
         }   
 
-        return methodRef.getReturnType();
+        return callingMethodRef.getReturnType();
     }
 
     /**
@@ -650,6 +650,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
      */
     @Override
     public String visit(ExpressionList n, Void argu) throws Exception {
+        argumentList.clear(); // Clearing the list before using it again
         String _ret=null;
         String arg = n.f0.accept(this, argu);
         argumentList.add(arg);
