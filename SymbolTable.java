@@ -33,6 +33,13 @@ public class SymbolTable {
         }
     }
 
+    public void printOffsets(){
+        for (Map.Entry<String,ClassData> entry : classMap.entrySet()){
+            System.out.println("-----------Class " + entry.getKey()+"-----------");
+            entry.getValue().printOffsets();
+        }
+    }
+
     public String findVarType(ClassData classRef, MethodData methodRef, String varName){
         // First we check if we have a number or a boolean and nor a variable
         if( varName.matches("[0-9]+") || varName.equals("int") ){

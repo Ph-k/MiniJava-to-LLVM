@@ -89,6 +89,17 @@ public class ClassData {
         }
     }
 
+    public void printOffsets() {
+        System.out.println("--Variables--");
+        for (Map.Entry<String,tupleTypeOffset> entry : variableMap.entrySet()){
+            System.out.println(name + "." + entry.getKey() + " : " + entry.getValue().offset);
+        }
+        System.out.println("--Methods--");
+        for (Map.Entry<String,MethodData> entry : methodMap.entrySet()){
+            entry.getValue().printOffsets(name);
+        }
+    }
+
     // custom tuple class to save both the type of variable and it's offset
     protected class tupleTypeOffset {
         protected String variableType;

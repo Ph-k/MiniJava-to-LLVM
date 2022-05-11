@@ -130,8 +130,16 @@ public class MethodData {
         }
     }
 
+    public void printOffsets(String className) {
+        System.out.println(className + "." + name + " : " + offset);
+    }
+
     public String getName() {
         return name;
+    }
+
+    public int getArgsCount() {
+        return this.argumentsMap.size();
     }
 
 }

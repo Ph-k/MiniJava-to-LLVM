@@ -382,9 +382,11 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String type2 =  n.f2.accept(this, argu);
         n.f3.accept(this, argu);
 
+        String t1=type1,t2=type2;
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
-        if(! symbolTable.typeEquality(type1, type2) ){
+        
+        if(!symbolTable.typeEquality(type1, type2) ){
             throw new Exception("Cannot cast " + type1 + " to " + type2);
         }
         return _ret;
@@ -450,6 +452,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
 
+        // To find the type of a variable
+        expressionType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expressionType);
         if( !isBoolean(expressionType) ){
             throw new Exception("Expression of while loop cannot be of type: " + expressionType + " it must be boolean");
         }
@@ -526,7 +530,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         if( !isInt(type1) || !isInt(type2) ){
             throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
-        return "int";
+        return "boolean";
     }
 
     /**
@@ -601,7 +605,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         indexType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, indexType);
         n.f3.accept(this, argu);
-        if( isInt(indexType) ){
+        if( !isInt(indexType) ){
             throw new Exception("Index cannot be " + indexType + ", only int allowed!");
         }
 
@@ -611,7 +615,11 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
             throw new Exception("Array can not be " + indexType + " must be int[] or boolean[]");
         }
 
-        return type1;
+        if( type1.equals("int[]") ){
+            return "int";
+        }else /*if( type1.equals("boolean[]") ) because of the above ifs, it can not be anything else*/{
+            return "boolean";
+        }
     }
 
     /**
@@ -650,8 +658,12 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f1.accept(this, argu);
         String callingMethodName = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        argumentList.clear(); // Clearing the list before using it again
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+
+        // To find the class name from object
+        callingClassName = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, callingClassName);
 
         ClassData callingClassRef = symbolTable.findClass(callingClassName);
         if( callingClassRef == null ){
@@ -666,12 +678,16 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
         String argType;
         int i = 0;
-        for (String arg : argumentList) {
-            argType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, arg);
-            if(! symbolTable.typeEquality( callingMethodRef.findNArng(i++), argType) ){
-                throw new Exception("Parameter " + String.valueOf(i) + " for " + callingMethodName + " is " + argType + ". Was expecting " + callingMethodRef.findNArng(i-1));
+        if( argumentList.size() != callingMethodRef.getArgsCount() ){
+            throw new Exception("For method: " + callingClassRef.getName() + '.' + callingMethodRef.getName() + " was expecting " + callingMethodRef.getArgsCount() + " arguments, insteed I got " + argumentList.size());
+        }else{
+            for (String arg : argumentList) {
+                argType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, arg);
+                if(! symbolTable.typeEquality( callingMethodRef.findNArng(i++), argType) ){
+                    throw new Exception("Parameter " + String.valueOf(i) + " for " + callingMethodName + " is " + argType + ". Was expecting " + callingMethodRef.findNArng(i-1));
+                }
             }
-        }   
+        } 
 
         return callingMethodRef.getReturnType();
     }
@@ -682,7 +698,6 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
      */
     @Override
     public String visit(ExpressionList n, Void argu) throws Exception {
-        argumentList.clear(); // Clearing the list before using it again
         String _ret=null;
         String arg = n.f0.accept(this, argu);
         argumentList.add(arg);

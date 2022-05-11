@@ -30,7 +30,7 @@ public class Main {
             root.accept(eval2, null);
 
 
-            symbolTable.printClasses();
+            symbolTable.printOffsets();
         }
         catch(ParseException ex){
             System.out.println(ex.getMessage());
