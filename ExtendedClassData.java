@@ -44,7 +44,7 @@ public class ExtendedClassData extends ClassData {
             methodMap.put(methodName, newMethodData);
         }else{
             System.out.println("For method: " + methodName);
-            throw new Exception("Redeclaration of method!");
+            throw new TypeCheckingException("Redeclaration of method!");
         }
 
         return newMethodData;
@@ -58,11 +58,11 @@ public class ExtendedClassData extends ClassData {
             if(  parrentMethod != null ){
                 if( entry.getValue().argsEquals(parrentMethod) == false){
                     System.out.println("On method: " + entry.getKey());
-                    throw new Exception("Overloading not allowed (different arguments)!");
+                    throw new TypeCheckingException("Overloading not allowed (different arguments)!");
                     //return false;
                 }else if ( entry.getValue().getReturnType().equals(parrentMethod.getReturnType()) == false){
                     System.out.println("On method: " + entry.getKey());
-                    throw new Exception("Overloading not allowed (different return type)!");
+                    throw new TypeCheckingException("Overloading not allowed (different return type)!");
                 }
             }
         }

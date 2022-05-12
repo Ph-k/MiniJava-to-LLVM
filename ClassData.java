@@ -1,5 +1,4 @@
 import java.util.Map;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 // For classes that do NOT extend
@@ -47,7 +46,7 @@ public class ClassData {
             methodOffsetIncreaser();
             methodMap.put(methodName, newMethodData);
         }else{
-            throw new Exception("Redeclaration of method!");
+            throw new TypeCheckingException("Redeclaration of method!");
         }
 
         return newMethodData;
@@ -65,7 +64,7 @@ public class ClassData {
             variableMap.put(variableName,  new tupleTypeOffset(variableType,variableOffset));
             variableOffsetIncreaser(variableType);
         }else{
-            throw new Exception("Redeclaration of variable!");
+            throw new TypeCheckingException("Redeclaration of variable!");
         }
         return true;
     }
@@ -114,7 +113,7 @@ public class ClassData {
     }
 
     public boolean methodsCheck() throws Exception{
-        throw new Exception("You called a ExtendedClassData method from a simple ClassData!");
+        throw new TypeCheckingException("You called a ExtendedClassData method from a simple ClassData!");
     }
 
 }

@@ -1,5 +1,4 @@
 import java.util.Map;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class SymbolTable {
@@ -18,7 +17,7 @@ public class SymbolTable {
         if( classMap.get(className) == null ){
             classMap.put(className, newClassData);
         }else{
-            throw new Exception("Redeclaration of class!");
+            throw new TypeCheckingException("Redeclaration of class!");
         }
 
         return newClassData;
@@ -77,12 +76,11 @@ public class SymbolTable {
     }
 
     public boolean typeEquality(String type1,String type2){
-        ClassData class1,class2;
+        ClassData classRef;
         if( type1.equals(type2) ){
             return true;
         } else {
-            class1 = classMap.get(type1);
-            class2 = classMap.get(type2);
+            classRef = classMap.get(type2);
 
             /*if( class1!=null && class2!=null){
                 return class1.checkParrentType(type2) || class2.checkParrentType(type1);
@@ -93,8 +91,8 @@ public class SymbolTable {
             }else{
                 return false;
             }*/
-            if( class2!=null)
-                return class2.checkParrentType(type1);
+            if( classRef!=null)
+                return classRef.checkParrentType(type1);
         }
         return false;
     }

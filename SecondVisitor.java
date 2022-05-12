@@ -162,7 +162,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     public String visit(VarDeclaration n, Void argu) throws Exception {
         String _ret=null;
         String varType = n.f0.accept(this, argu);
-        String varName = n.f1.accept(this, argu);
+        n.f1.accept(this, argu);
         n.f2.accept(this, argu);
 
         if( lastVisited.method != null ){
@@ -172,7 +172,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         }
 
         if(symbolTable.typeExists(varType) == false){
-            throw new Exception("At class: " + lastVisited.classRef.getName() +
+            throw new TypeCheckingException("At class: " + lastVisited.classRef.getName() +
             (   lastVisited.method != null?
                 ". At method: " + lastVisited.method.getName() :
                 ""
@@ -223,7 +223,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
             lastVisited.method.getReturnType()
             )
         ){
-            throw new Exception("Invalid return type. Method: " + lastVisited.method.getName() + " returns " + lastVisited.method.getReturnType() + " but " + returnType + " was given");
+            throw new TypeCheckingException("Invalid return type. Method: " + lastVisited.method.getName() + " returns " + lastVisited.method.getReturnType() + " but " + returnType + " was given");
         }
         lastVisited.method = null;
         return _ret;
@@ -248,8 +248,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(FormalParameter n, Void argu) throws Exception {
         String _ret=null;
-        String argType = n.f0.accept(this, argu);
-        String argName = n.f1.accept(this, argu);
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
         return _ret;
     }
 
@@ -382,12 +382,11 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String type2 =  n.f2.accept(this, argu);
         n.f3.accept(this, argu);
 
-        String t1=type1,t2=type2;
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
         
         if(!symbolTable.typeEquality(type1, type2) ){
-            throw new Exception("Cannot cast " + type1 + " to " + type2);
+            throw new TypeCheckingException("Cannot cast " + type1 + " to " + type2);
         }
         return _ret;
     }
@@ -414,7 +413,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
         indexType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, indexType);
         if( !isInt(indexType) ){
-            throw new Exception("Index cannot be " + indexType + ", only int allowed!");
+            throw new TypeCheckingException("Index cannot be " + indexType + ", only int allowed!");
         }
 
         return _ret;
@@ -461,7 +460,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         // To find the type of a variable
         expressionType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expressionType);
         if( !isBoolean(expressionType) ){
-            throw new Exception("Expression of while loop cannot be of type: " + expressionType + " it must be boolean");
+            throw new TypeCheckingException("Expression of while loop cannot be of type: " + expressionType + " it must be boolean");
         }
         return _ret;
     }
@@ -484,7 +483,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
         printType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, printType);
         if( !isInt(printType) && !isBoolean(printType) ){
-            throw new Exception("Cannot print type " + printType + ", only int and boolean allowed!");
+            throw new TypeCheckingException("Cannot print type " + printType + ", only int and boolean allowed!");
         }
         return _ret;
     }
@@ -519,7 +518,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
         if( !isBoolean(type1) || !isBoolean(type2) ){
-            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only boolean and boolean is allowed");
+            throw new TypeCheckingException("Cannot compare " + type1 + " with " + type2 + " only boolean and boolean is allowed");
         }
         return "boolean";
         //return _ret;
@@ -539,7 +538,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
         if( !isInt(type1) || !isInt(type2) ){
-            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
+            throw new TypeCheckingException("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "boolean";
     }
@@ -558,7 +557,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
         if( !isInt(type1) || !isInt(type2) ){
-            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
+            throw new TypeCheckingException("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "int";
     }
@@ -577,7 +576,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
         if( !isInt(type1) || !isInt(type2) ){
-            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
+            throw new TypeCheckingException("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "int";
     }
@@ -596,7 +595,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
         type2 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type2);
         if( !isInt(type1) || !isInt(type2) ){
-            throw new Exception("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
+            throw new TypeCheckingException("Cannot compare " + type1 + " with " + type2 + " only int and int is allowed");
         }
         return "int";
     }
@@ -617,13 +616,13 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         indexType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, indexType);
         n.f3.accept(this, argu);
         if( !isInt(indexType) ){
-            throw new Exception("Index cannot be " + indexType + ", only int allowed!");
+            throw new TypeCheckingException("Index cannot be " + indexType + ", only int allowed!");
         }
 
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
 
         if( (!type1.equals("int[]")) && !(type1.equals("boolean[]")) ){
-            throw new Exception("Array can not be " + indexType + " must be int[] or boolean[]");
+            throw new TypeCheckingException("Array can not be " + indexType + " must be int[] or boolean[]");
         }
 
         if( type1.equals("int[]") ){
@@ -648,7 +647,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
 
         if( (!type1.equals("int[]")) && !(type1.equals("boolean[]")) ){
-            throw new Exception("Array can not be " + type1 + " must be int[] or boolean[]");
+            throw new TypeCheckingException("Array can not be " + type1 + " must be int[] or boolean[]");
         }
 
         return "int";
@@ -678,24 +677,24 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
         ClassData callingClassRef = symbolTable.findClass(callingClassName);
         if( callingClassRef == null ){
-            throw new Exception("Class " + callingClassName + " has not been declared!");
+            throw new TypeCheckingException("Class " + callingClassName + " has not been declared!");
         }
 
 
         MethodData callingMethodRef = callingClassRef.findMethod(callingMethodName);
         if( callingMethodRef == null ){
-            throw new Exception("Method " + callingMethodName + " is not a member of " + callingClassRef.getName());
+            throw new TypeCheckingException("Method " + callingMethodName + " is not a member of " + callingClassRef.getName());
         }
 
         String argType;
         int i = 0;
         if( argumentList.size() != callingMethodRef.getArgsCount() ){
-            throw new Exception("For method: " + callingClassRef.getName() + '.' + callingMethodRef.getName() + " was expecting " + callingMethodRef.getArgsCount() + " arguments, insteed I got " + argumentList.size());
+            throw new TypeCheckingException("For method: " + callingClassRef.getName() + '.' + callingMethodRef.getName() + " was expecting " + callingMethodRef.getArgsCount() + " arguments, insteed I got " + argumentList.size());
         }else{
             for (String arg : argumentList) {
                 argType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, arg);
                 if(! symbolTable.typeEquality( callingMethodRef.findNArng(i++), argType) ){
-                    throw new Exception("Parameter " + String.valueOf(i) + " for " + callingMethodName + " is " + argType + ". Was expecting " + callingMethodRef.findNArng(i-1));
+                    throw new TypeCheckingException("Parameter " + String.valueOf(i) + " for " + callingMethodName + " is " + argType + ". Was expecting " + callingMethodRef.findNArng(i-1));
                 }
             }
         } 
@@ -833,7 +832,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
         allocationType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, allocationType);
         if( !isInt(allocationType) ){
-            throw new Exception("Array allocator must be int. Insted it is: " + allocationType);
+            throw new TypeCheckingException("Array allocator must be int. Insted it is: " + allocationType);
         }
         return "boolean[]";
         //return _ret;
@@ -857,7 +856,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
         allocationType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, allocationType);
         if( !isInt(allocationType) ){
-            throw new Exception("Array allocator must be int. Insted it is: " + allocationType);
+            throw new TypeCheckingException("Array allocator must be int. Insted it is: " + allocationType);
         }
         return "int[]";
         //return _ret;
@@ -875,7 +874,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         String identifier = n.f1.accept(this, argu);
         if(symbolTable.typeExists(identifier) == false){
-            throw new Exception("At class: " + lastVisited.classRef.getName() +
+            throw new TypeCheckingException("At class: " + lastVisited.classRef.getName() +
             (   lastVisited.method != null?
                 ". At method: " + lastVisited.method.getName() :
                 ""
@@ -900,7 +899,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String clauseType = n.f1.accept(this, argu);
         clauseType = symbolTable.findVarType(lastVisited.classRef,lastVisited.method,clauseType);
         if( !isBoolean(clauseType) ){
-            throw new Exception("Logical operator !, expects booleans. " + clauseType + " is not allowed.");
+            throw new TypeCheckingException("Logical operator !, expects booleans. " + clauseType + " is not allowed.");
         }
         return clauseType;
     }

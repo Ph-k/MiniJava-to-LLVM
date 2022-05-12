@@ -6,44 +6,58 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        if(args.length != 1){
-            System.err.println("Usage: java Main <inputFile>");
+        if(args.length < 1){
+            System.err.println("Usage: java Main <inputFile1> ... <inputFileN>");
             System.exit(1);
         }
 
-
-
         FileInputStream fis = null;
-        try{
-            fis = new FileInputStream(args[0]);
-            MiniJavaParser parser = new MiniJavaParser(fis);
-
-            Goal root = parser.Goal();
-
-            System.err.println("Program parsed successfully.");
-
-            SymbolTable symbolTable = new SymbolTable();
-            FirstVisitor eval1 = new FirstVisitor(symbolTable);
-            root.accept(eval1, null);
-
-            SecondVisitor eval2 = new SecondVisitor(symbolTable);
-            root.accept(eval2, null);
-
-
-            symbolTable.printOffsets();
-        }
-        catch(ParseException ex){
-            System.out.println(ex.getMessage());
-        }
-        catch(FileNotFoundException ex){
-            System.err.println(ex.getMessage());
-        }
-        finally{
+        for(int i=0; i<args.length; i++){
             try{
-                if(fis != null) fis.close();
+                fis = new FileInputStream(args[i]);
+                MiniJavaParser parser = new MiniJavaParser(fis);
+
+                Goal root = parser.Goal();
+
+                System.out.println("Program " + args[i] + " parsed successfully!");
+
+                SymbolTable symbolTable = new SymbolTable();
+                FirstVisitor eval1 = new FirstVisitor(symbolTable);
+
+                try{
+                    root.accept(eval1, null);
+                }catch (TypeCheckingException e) {
+                    System.out.print("At program " + args[i] + " the following error was encountered:\n\t");
+                    System.out.println(e);
+                    continue;
+                }
+
+                SecondVisitor eval2 = new SecondVisitor(symbolTable);
+                try{
+                    root.accept(eval2, null);
+                }catch (TypeCheckingException e) {
+                    System.out.print("At program " + args[i] + " the following error was encountered:\n\t");
+                    System.out.println(e);
+                    continue;
+                }
+
+                System.out.println("No type erros for program " + args[i] + " were found, offsets:");
+                symbolTable.printOffsets();
             }
-            catch(IOException ex){
+            catch(ParseException ex){
+                System.out.print("At program " + args[i] + " the following parsing error was encountered:\n\t");
+                System.out.println(ex.getMessage());
+            }
+            catch(FileNotFoundException ex){
                 System.err.println(ex.getMessage());
+            }
+            finally{
+                try{
+                    if(fis != null) fis.close();
+                }
+                catch(IOException ex){
+                    System.err.println(ex.getMessage());
+                }
             }
         }
     }
