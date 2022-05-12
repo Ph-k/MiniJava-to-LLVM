@@ -1,10 +1,11 @@
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 // For classes that do NOT extend
 public class ClassData {
-    protected Map<String, MethodData> methodMap = new HashMap<String, MethodData>();
-    protected Map<String, tupleTypeOffset> variableMap = new HashMap<String, tupleTypeOffset>();
+    protected Map<String, MethodData> methodMap = new LinkedHashMap<String, MethodData>();
+    protected Map<String, tupleTypeOffset> variableMap = new LinkedHashMap<String, tupleTypeOffset>();
     protected int currentMethodOffset = 0, currentVariableOffset = 0;
     protected String name;
 
@@ -39,7 +40,7 @@ public class ClassData {
     }
 
     public MethodData addMethod(String methodName, String returnType) throws Exception{
-        MethodData newMethodData = new MethodData(methodName,returnType,currentMethodOffset);
+        MethodData newMethodData = new MethodData(methodName,returnType,currentMethodOffset, false);
 
         // Adding the method only if another with the same name has not been declared
         if( methodMap.get(methodName) == null ){
@@ -90,13 +91,14 @@ public class ClassData {
     }
 
     public void printOffsets() {
-        System.out.println("--Variables--");
+        System.out.println("--Variables---");
         for (Map.Entry<String,tupleTypeOffset> entry : variableMap.entrySet()){
             System.out.println(name + "." + entry.getKey() + " : " + entry.getValue().offset);
         }
-        System.out.println("--Methods--");
+        System.out.println("---Methods---");
         for (Map.Entry<String,MethodData> entry : methodMap.entrySet()){
-            entry.getValue().printOffsets(name);
+            if(!entry.getValue().overrides())
+                entry.getValue().printOffsets(name);
         }
     }
 

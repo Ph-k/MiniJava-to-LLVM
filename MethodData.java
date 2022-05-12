@@ -56,11 +56,17 @@ public class MethodData {
     private Map<String, String> variableMap = new HashMap<String, String>();
     private String returnType, name;
     private int offset;
+    private boolean override;
 
-    MethodData(String givenName, String givenReturnType, int givenOffest){
+    MethodData(String givenName, String givenReturnType, int givenOffest, boolean givenOverride){
         returnType = givenReturnType;
         name = givenName;
         offset = givenOffest;
+        override = givenOverride;
+    }
+
+    public boolean overrides(){
+        return override;
     }
 
     public boolean addArgument(String argName, String argType) throws Exception{

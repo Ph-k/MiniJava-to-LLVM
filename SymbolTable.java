@@ -1,15 +1,17 @@
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class SymbolTable {
-    private Map<String, ClassData> classMap = new HashMap<String, ClassData>();
+    private Map<String, ClassData> classMap = new LinkedHashMap<String, ClassData>();
+    private ClassData mainClassRef;
 
     public ClassData addClass(String className, ClassData parrentClassRef) throws Exception{
         ClassData newClassData;
         if(parrentClassRef == null){
             newClassData = new ClassData(className);
         }else{
-            newClassData = new ExtendedClassData(className, parrentClassRef);
+            newClassData = new ExtendedClassData(className, parrentClassRef, mainClassRef == parrentClassRef);
         }
 
         // Adding the class only if another with the same name has not been declared
@@ -20,6 +22,10 @@ public class SymbolTable {
         }
 
         return newClassData;
+    }
+
+    public void setMainClass(ClassData givenMainClassRef){
+        mainClassRef = givenMainClassRef;
     }
 
     public ClassData findClass(String className){
@@ -35,8 +41,10 @@ public class SymbolTable {
 
     public void printOffsets(){
         for (Map.Entry<String,ClassData> entry : classMap.entrySet()){
-            System.out.println("-----------Class " + entry.getKey()+"-----------");
-            entry.getValue().printOffsets();
+            if( mainClassRef != entry.getValue() ){
+                System.out.println("-----------Class " + entry.getKey()+"-----------");
+                entry.getValue().printOffsets();
+            }
         }
     }
 

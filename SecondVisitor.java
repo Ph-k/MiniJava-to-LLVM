@@ -406,11 +406,17 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String indexType = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
+
+        indexType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, indexType);
+        if( !isInt(indexType) ){
+            throw new Exception("Index cannot be " + indexType + ", only int allowed!");
+        }
+
         return _ret;
     }
 
@@ -472,9 +478,14 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String printType = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
+
+        printType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, printType);
+        if( !isInt(printType) && !isBoolean(printType) ){
+            throw new Exception("Cannot print type " + printType + ", only int and boolean allowed!");
+        }
         return _ret;
     }
 
@@ -602,7 +613,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String indexType = n.f2.accept(this, argu);
-        type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
+
         indexType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, indexType);
         n.f3.accept(this, argu);
         if( !isInt(indexType) ){

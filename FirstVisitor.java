@@ -56,6 +56,7 @@ public class FirstVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
         lastVisited.classRef = symbolTable.addClass(className, null);
+        symbolTable.setMainClass(lastVisited.classRef);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);

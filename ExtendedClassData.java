@@ -4,10 +4,10 @@ import java.util.Map;
 public class ExtendedClassData extends ClassData {
     private ClassData parrentClassRef;
 
-    ExtendedClassData(String className, ClassData givenParrentClassRef){
+    ExtendedClassData(String className, ClassData givenParrentClassRef, boolean ExtendsMain){
         super(className);
         parrentClassRef = givenParrentClassRef;
-        currentMethodOffset = givenParrentClassRef.getMethodOffset();
+        currentMethodOffset = ( ExtendsMain == false ? givenParrentClassRef.getMethodOffset() : 0 );
         currentVariableOffset = givenParrentClassRef.getVariableOffset();
     }
 
@@ -37,7 +37,7 @@ public class ExtendedClassData extends ClassData {
             return super.addMethod(methodName, returnType);
         }
         // Otherwise we have to set the offset of the function based on the parrent offset
-        MethodData newMethodData = new MethodData(methodName,returnType,parrentClassMethod.getOffset());
+        MethodData newMethodData = new MethodData(methodName,returnType,parrentClassMethod.getOffset(),true);
 
         // Adding the method only if another with the same name has not been declared
         if( methodMap.get(methodName) == null ){
