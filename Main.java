@@ -15,6 +15,7 @@ public class Main {
         // For all the given inputs
         for(int i=0; i<args.length; i++){
             try{
+                //System.out.println("\n_______________________________________");
                 fis = new FileInputStream(args[i]);
                 // First we parse the input
                 MiniJavaParser parser = new MiniJavaParser(fis);
@@ -50,6 +51,7 @@ public class Main {
 
                 System.out.println("No type erros for program " + args[i] + " were found, offsets:");
                 symbolTable.printOffsets();
+
             }
             catch(ParseException ex){
                 System.out.print("At program " + args[i] + " the following parsing error was encountered:\n\t");

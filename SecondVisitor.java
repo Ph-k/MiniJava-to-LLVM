@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import visitor.GJDepthFirst;
 
+// This visitor is used after the FirstVisitor. And using the filled symbol table, it performs type checking.
 public class SecondVisitor extends GJDepthFirst<String, Void>{
     private SymbolTable symbolTable;
     public SecondVisitor(SymbolTable givenSymbolTable){
@@ -165,12 +166,6 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
 
-        if( lastVisited.method != null ){
-            // this is a method var
-        }else{
-            // this is a class var
-        }
-
         if(symbolTable.typeExists(varType) == false){
             throw new TypeCheckingException("At class: " + lastVisited.classRef.getName() +
             (   lastVisited.method != null?
@@ -219,8 +214,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
 
        
         if(!symbolTable.typeEquality(
-            symbolTable.findVarType(lastVisited.classRef, lastVisited.method, returnType),
-            lastVisited.method.getReturnType()
+            lastVisited.method.getReturnType(),
+            symbolTable.findVarType(lastVisited.classRef, lastVisited.method, returnType)
             )
         ){
             throw new TypeCheckingException("Invalid return type. Method: " + lastVisited.method.getName() + " returns " + lastVisited.method.getReturnType() + " but " + returnType + " was given");

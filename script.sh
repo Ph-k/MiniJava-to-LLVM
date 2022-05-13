@@ -58,7 +58,7 @@ then
     pass=0
     fail=0
     echo -e "\nChecking for program offests:"
-    for input in ./../inputs/smar/*; do
+    for input in ./../inputs/smar/* ./../inputs/smar/*/*; do
         if [[ -f ${input} && "$input" != *"error"* ]];
         then
             # use the tail -n +x, where x is the number of the first lines of code you want the script to ignore
