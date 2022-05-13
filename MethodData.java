@@ -74,7 +74,7 @@ public class MethodData {
             return argumentsMap.put(argName, argType)/* == null ? true : false*/ ;
         }else{
             System.out.println("For arg: " + argName);
-            throw new TypeCheckingException("Redefinition of argument!");
+            throw new TypeCheckingException("Redefinition of argument: " + argName + "!");
         }
     }
 
@@ -86,7 +86,7 @@ public class MethodData {
         if(variableMap.get(variableName) == null && argumentsMap.get(variableName) == null){
             return variableMap.put(variableName, variableType) == null ? true : false ;
         }else{
-            throw new TypeCheckingException("Redefinition of variable!");
+            throw new TypeCheckingException("Redefinition of variable: " + variableName + "!");
         }
     }
 

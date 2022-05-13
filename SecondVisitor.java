@@ -433,11 +433,17 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String expressionType = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
+
+        // To find the type of a variable
+        expressionType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expressionType);
+        if( !isBoolean(expressionType) ){
+            throw new TypeCheckingException("Expression of if statement cannot be of type: " + expressionType + " it must be boolean");
+        }
         return _ret;
     }
 
@@ -460,7 +466,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         // To find the type of a variable
         expressionType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expressionType);
         if( !isBoolean(expressionType) ){
-            throw new TypeCheckingException("Expression of while loop cannot be of type: " + expressionType + " it must be boolean");
+            throw new TypeCheckingException("Expression of while statement cannot be of type: " + expressionType + " it must be boolean");
         }
         return _ret;
     }
@@ -482,8 +488,8 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f4.accept(this, argu);
 
         printType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, printType);
-        if( !isInt(printType) && !isBoolean(printType) ){
-            throw new TypeCheckingException("Cannot print type " + printType + ", only int and boolean allowed!");
+        if( !isInt(printType) ){
+            throw new TypeCheckingException("Cannot print type " + printType + ", only int allowed!");
         }
         return _ret;
     }
