@@ -1,9 +1,12 @@
 import java.util.Map;
 import java.util.LinkedHashMap;
 
-// For classes that do NOT extend
+// This class represents a class (that does NOT extend), and holds all the nessesery information about it.
+// (If the class extends, a subclass of ClassData is used, the ExtendedClassData)
 public class ClassData {
+    // Map to associate the name of method to a referance of it's object
     protected Map<String, MethodData> methodMap = new LinkedHashMap<String, MethodData>();
+    // Map to associate the name of a variable, to the offset and type of it
     protected Map<String, tupleTypeOffset> variableMap = new LinkedHashMap<String, tupleTypeOffset>();
     protected int currentMethodOffset = 0, currentVariableOffset = 0;
     protected String name;
@@ -28,6 +31,7 @@ public class ClassData {
         currentMethodOffset += 8;
     }
 
+    // Increases the offset according to the given type
     protected void variableOffsetIncreaser(String type){
         if( type.equals("int") ){ // int case
             currentVariableOffset += 4;
@@ -59,7 +63,7 @@ public class ClassData {
     public boolean addVariable(String variableName, String variableType) throws Exception{
         int variableOffset = currentVariableOffset;
 
-        // Adding the class only if another with the same name has not been declared
+        // Adding the variable only if another with the same name has not been declared
         if( variableMap.get(variableName) == null ){
             variableMap.put(variableName,  new tupleTypeOffset(variableType,variableOffset));
             variableOffsetIncreaser(variableType);
@@ -74,10 +78,7 @@ public class ClassData {
         return (typeNoffset != null)? typeNoffset.variableType : null ;
     }
 
-    public boolean checkParrentType(String type){
-        return type.equals(name);
-    }
-
+    // Method to print the data of the class in DETAIL
     public void print(){
         System.out.println("\tVariables:");
         for (Map.Entry<String,tupleTypeOffset> entry : variableMap.entrySet()){
@@ -89,6 +90,7 @@ public class ClassData {
         }
     }
 
+    // Method to print the data of the class as show in the examples of the project
     public void printOffsets() {
         System.out.println("--Variables---");
         for (Map.Entry<String,tupleTypeOffset> entry : variableMap.entrySet()){
@@ -101,7 +103,8 @@ public class ClassData {
         }
     }
 
-    // custom tuple class to save both the type of variable and it's offset
+    // A you may have noticed at the variableMap a variable is saved on a typle with it's type and offset
+    // In need for a smiple tuple this custom to save both the type of variable and it's offset was created
     protected class tupleTypeOffset {
         protected String variableType;
         protected int offset;
@@ -110,6 +113,12 @@ public class ClassData {
             variableType = givenVariableType;
             offset = givenOffset;
         }
+    }
+
+    // This function needs to be decleared here, because the checkParrentType on ExtendedClassData is recursive
+    // The recursion of ExtendedClassData.checkParrentType stops here
+    public boolean checkParrentType(String type){
+        return type.equals(name);
     }
 
     public boolean methodsCheck() throws Exception{

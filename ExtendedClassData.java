@@ -1,32 +1,38 @@
 import java.util.Map;
 
-// It has all the functionality a SimpleClassData, plus the extend functionality
+// It has the same functionality as the SimpleClassData
+// But it overloads some of it's methods to add some functionality needed when a class extends
 public class ExtendedClassData extends ClassData {
+    // In addition to all the data held by the ClassData about the class, here we also need to save a referance to the parrent class
     private ClassData parrentClassRef;
 
+    // This constructor create a ClassData, but in addition to the simple ClassData constructor, it sets the offsets given the offsets of the parrent class
     ExtendedClassData(String className, ClassData givenParrentClassRef, boolean ExtendsMain){
         super(className);
         parrentClassRef = givenParrentClassRef;
+        // The method offsets are set after the parrents only if the class does NOT extend the main class, otherwise the offsets shall start from 0 again
         currentMethodOffset = ( ExtendsMain == false ? givenParrentClassRef.getMethodOffset() : 0 );
         currentVariableOffset = givenParrentClassRef.getVariableOffset();
     }
 
     public MethodData findMethod(String methodName){
         MethodData method = methodMap.get(methodName);
-        // Searching to parrent if the method does not exist in child
         if(method != null){
             return method;
-        }else
+        }else{
+            // If the requested method was not found, maybe a parrent class has it
             return parrentClassRef.findMethod(methodName);
+        }
     }
 
     public String findVariable(String variableName){
         tupleTypeOffset typeNoffset = variableMap.get(variableName);
-        // Searching to parrent if the method does not exist in child
         if( typeNoffset != null){ 
             return typeNoffset.variableType;
-        }else
+        }else{
+            // If the requested variable was not found, mayby a parrent class has it
             return parrentClassRef.findVariable(variableName);
+        }
     }
 
     @Override
@@ -50,6 +56,7 @@ public class ExtendedClassData extends ClassData {
         return newMethodData;
     }
 
+    // This methods checks if all the overridings function are valid, since no overloading is allowed
     @Override
     public boolean methodsCheck() throws Exception{
         MethodData parrentMethod;
@@ -57,10 +64,11 @@ public class ExtendedClassData extends ClassData {
             parrentMethod = parrentClassRef.methodMap.get(entry.getKey());
             if(  parrentMethod != null ){
                 if( entry.getValue().argsEquals(parrentMethod) == false){
+                    // Frist checking the number, order, and types of argumetns
                     System.out.println("On method: " + entry.getKey());
                     throw new TypeCheckingException("Overloading not allowed (different arguments)!");
-                    //return false;
                 }else if ( entry.getValue().getReturnType().equals(parrentMethod.getReturnType()) == false){
+                    // Then we check the return type
                     System.out.println("On method: " + entry.getKey());
                     throw new TypeCheckingException("Overloading not allowed (different return type)!");
                 }
@@ -69,6 +77,8 @@ public class ExtendedClassData extends ClassData {
         return true;
     }
 
+    // Given the name of class, the function checks if this class is dirived from the given
+    // (Used to check a type of an object which inherits)
     public boolean checkParrentType(String type){
         return name.equals(type) || parrentClassRef.checkParrentType(type);
     }

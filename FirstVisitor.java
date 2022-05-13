@@ -1,6 +1,7 @@
 import syntaxtree.*;
 import visitor.GJDepthFirst;
 
+// This visitor is used to fill the symbol table, and do some basic checks such as redifenition of variable etc.
 public class FirstVisitor extends GJDepthFirst<String, Void>{
 
     private SymbolTable symbolTable;
@@ -139,6 +140,7 @@ public class FirstVisitor extends GJDepthFirst<String, Void>{
         n.f6.accept(this, argu);
         n.f7.accept(this, argu);
 
+        // After the extended class have been fully created, we check for invalid overloadings of methods
         lastVisited.classRef.methodsCheck();
         lastVisited.classRef = null;
 

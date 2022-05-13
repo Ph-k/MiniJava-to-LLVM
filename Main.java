@@ -12,26 +12,33 @@ public class Main {
         }
 
         FileInputStream fis = null;
+        // For all the given inputs
         for(int i=0; i<args.length; i++){
             try{
                 fis = new FileInputStream(args[i]);
+                // First we parse the input
                 MiniJavaParser parser = new MiniJavaParser(fis);
 
                 Goal root = parser.Goal();
 
                 System.out.println("Program " + args[i] + " parsed successfully!");
 
+
+                // Then we perform some first-level checking and fill the symbol table using the first visitor
                 SymbolTable symbolTable = new SymbolTable();
                 FirstVisitor eval1 = new FirstVisitor(symbolTable);
 
                 try{
                     root.accept(eval1, null);
                 }catch (TypeCheckingException e) {
+                    // We catch any exceptions about an error of the file, we print what is wrong with it
                     System.out.print("At program " + args[i] + " the following error was encountered:\n\t");
                     System.out.println(e);
+                    // And we continue to the next file
                     continue;
                 }
 
+                // The same way as above, but now we use the second visitor to perform type checking
                 SecondVisitor eval2 = new SecondVisitor(symbolTable);
                 try{
                     root.accept(eval2, null);
