@@ -62,7 +62,7 @@ then
         if [[ -f ${input} && "$input" != *"error"* ]];
         then
             # use the tail -n +x, where x is the number of the first lines of code you want the script to ignore
-            output=$(java Main ${input} 2>&1 | tail -n +3)
+            output=$(java Main ${input} 2>&1 | tail -n +6)
             basename="$(basename -- $input)"
             basename=${basename%".java"}.txt
 

@@ -122,7 +122,7 @@ public class ClassData {
     }
 
     public boolean methodsCheck() throws Exception{
-        throw new TypeCheckingException("You called a ExtendedClassData method from a simple ClassData!");
+        throw new Exception("You called a ExtendedClassData method from a simple ClassData!");
     }
 
 }

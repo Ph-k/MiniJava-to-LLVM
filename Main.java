@@ -15,7 +15,7 @@ public class Main {
         // For all the given inputs
         for(int i=0; i<args.length; i++){
             try{
-                //System.out.println("\n_______________________________________");
+                System.out.println("\n__________" + args[i] + "__________\n");
                 fis = new FileInputStream(args[i]);
                 // First we parse the input
                 MiniJavaParser parser = new MiniJavaParser(fis);
