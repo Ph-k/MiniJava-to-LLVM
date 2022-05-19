@@ -53,7 +53,7 @@ public class Main {
                 symbolTable.printOffsets();
 
                 String basename = args[i].substring(args[i].lastIndexOf("/") + 1);
-                LlvmVisitor llvmVisitor = new LlvmVisitor(basename.substring(0, basename.length() - 4) + "ll");
+                LlvmVisitor llvmVisitor = new LlvmVisitor(basename.substring(0, basename.length() - 4) + "ll",symbolTable);
                 root.accept(llvmVisitor, null);
 
                 llvmVisitor.close();

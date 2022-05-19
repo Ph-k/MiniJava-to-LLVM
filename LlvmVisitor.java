@@ -1,21 +1,76 @@
 import syntaxtree.*;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Map;
+
 import visitor.GJDepthFirst;
 
 public class LlvmVisitor extends GJDepthFirst<String, Void>{
     FileWriter llOutput;
+    private SymbolTable symbolTable;
 
-    LlvmVisitor(String filename) throws IOException{
+    LlvmVisitor(String filename, SymbolTable givenSymbolTable) throws IOException{
         llOutput = new FileWriter( filename );
+        symbolTable = givenSymbolTable;
+
+        int i;
+        String argType;
+        ClassData classData;
+        MethodData methodData;
+        //Creating Vtable for each class
+        for (Map.Entry<String,ClassData> classEntry : symbolTable.getClassMap().entrySet()){
+            classData = classEntry.getValue();
+            // Vtables name, and number of methods
+            llOutput.write("@" + classEntry.getKey() + "_Vtable = global [" + classData.getMethodMap().size() + " x i8*] [" );
+            // For each method
+            for (Map.Entry<String,MethodData> methodEntry : classData.getMethodMap().entrySet()){
+                // Writing return type
+                llOutput.write("\n\ti8* bitcast (" + toLlType(methodEntry.getValue().getReturnType()) + " (");
+
+                // And type of args
+                methodData = methodEntry.getValue();
+                for(i=0; i < methodData.getArgsCount(); i++ ){
+                    argType = methodData.findNArng(i);
+                    llOutput.write(toLlType(argType) + (((i+1) < methodData.getArgsCount()) ? ", " : ")*"));
+                }
+
+                // And name of method
+                llOutput.write(" @" + classData.name + "_" + methodEntry.getKey() + " to i8*)\n");
+            }
+            llOutput.write("                                ]\n\n");
+        }
     }
 
+    private class LastVisited{
+        public ClassData classRef = null;
+        public MethodData method = null;
+    }
+
+    private LastVisited lastVisited = new LastVisited();
+
+    private String toLlType(String type) {
+        switch (type) {
+            case "int":
+                return "i32";
+            case "boolean":
+                return "i1";
+            case "int[]":
+                return "i32*";
+            case "boolean[]":
+                return "i8*";
+            case "void":
+                return "void";
+            default:
+                return "i32*";
+        }
+    }
 
    /**
     * f0 -> MainClass()
     * f1 -> ( TypeDeclaration() )*
     * f2 -> <EOF>
     */
+    @Override
     public String visit(Goal n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -44,15 +99,19 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f16 -> "}"
     * f17 -> "}"
     */
+    @Override
     public String visit(MainClass n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
+        String className = n.f1.accept(this, argu);
+        lastVisited.classRef = symbolTable.findClass(className);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
+        lastVisited.method = lastVisited.classRef.findMethod("main");
         n.f7.accept(this, argu);
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
@@ -64,6 +123,26 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f15.accept(this, argu);
         n.f16.accept(this, argu);
         n.f17.accept(this, argu);
+
+        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "_main" + 
+        " (i8* %this");
+
+        String argType, argName;
+        for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
+            argType = lastVisited.method.findNArng(i);
+            argName = lastVisited.method.findNArngName(i);
+            llOutput.write(", " + toLlType(argType) + " %" + argName );
+        }
+        llOutput.write(") {\n");
+
+        for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
+            llOutput.write("\t%" + entry.getKey() + " = alloca " + toLlType(entry.getValue()) + "\n" );
+        }
+
+        lastVisited.classRef = null;
+        lastVisited.method = null;
+        llOutput.write("}\n\n");
+
         return _ret;
     }
 
@@ -71,6 +150,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> ClassDeclaration()
     *       | ClassExtendsDeclaration()
     */
+    @Override
     public String visit(TypeDeclaration n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -83,14 +163,19 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f4 -> ( MethodDeclaration() )*
     * f5 -> "}"
     */
+    @Override
     public String visit(ClassDeclaration n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String className = n.f1.accept(this, argu);
+        lastVisited.classRef = symbolTable.findClass(className);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+
+        lastVisited.classRef = null;
+
         return _ret;
     }
 
@@ -104,16 +189,22 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f6 -> ( MethodDeclaration() )*
     * f7 -> "}"
     */
+    @Override
     public String visit(ClassExtendsDeclaration n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
+        String className = n.f1.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        lastVisited.classRef = symbolTable.findClass(className);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         n.f7.accept(this, argu);
+
+        lastVisited.classRef = null;
+
         return _ret;
     }
 
@@ -122,6 +213,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> Identifier()
     * f2 -> ";"
     */
+    @Override
     public String visit(VarDeclaration n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -145,11 +237,13 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f11 -> ";"
     * f12 -> "}"
     */
+    @Override
     public String visit(MethodDeclaration n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String methodName = n.f2.accept(this, argu);
+        lastVisited.method = lastVisited.classRef.findMethod(methodName);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
@@ -160,6 +254,35 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f10.accept(this, argu);
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
+
+        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "_" + methodName + 
+        " (i8* %this");
+
+        // Writing args
+        String argType, argName;
+        for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
+            argType = lastVisited.method.findNArng(i);
+            argName = lastVisited.method.findNArngName(i);
+            llOutput.write(", " + toLlType(argType) + " %." + argName );
+        }
+        llOutput.write(") {\n");
+
+        // Allocating local vars for args
+        for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
+            argType = lastVisited.method.findNArng(i);
+            argName = lastVisited.method.findNArngName(i);
+            llOutput.write("\t%" + argName + " = alloca " + toLlType(argType) + "\n" +
+                           "\tstore " + toLlType(argType) + " %." + argName + ", " + toLlType(argType) +  "* %" + argName + "\n");
+        }
+        llOutput.write("\n");
+
+        // Allocating vars
+        for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
+            llOutput.write("\t%" + entry.getKey() + " = alloca " + toLlType(entry.getValue()) + "\n" );
+        }
+
+        lastVisited.method = null;
+        llOutput.write("}\n\n");
         return _ret;
     }
 
@@ -167,6 +290,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> FormalParameter()
     * f1 -> FormalParameterTail()
     */
+    @Override
     public String visit(FormalParameterList n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -178,6 +302,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> Type()
     * f1 -> Identifier()
     */
+    @Override
     public String visit(FormalParameter n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -188,6 +313,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> ( FormalParameterTerm() )*
     */
+    @Override
     public String visit(FormalParameterTail n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -196,6 +322,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> ","
     * f1 -> FormalParameter()
     */
+    @Override
     public String visit(FormalParameterTerm n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -209,6 +336,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     *       | IntegerType()
     *       | Identifier()
     */
+    @Override
     public String visit(Type n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -217,6 +345,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> BooleanArrayType()
     *       | IntegerArrayType()
     */
+    @Override
     public String visit(ArrayType n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -226,6 +355,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "["
     * f2 -> "]"
     */
+    @Override
     public String visit(BooleanArrayType n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -239,6 +369,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "["
     * f2 -> "]"
     */
+    @Override
     public String visit(IntegerArrayType n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -250,6 +381,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> "boolean"
     */
+    @Override
     public String visit(BooleanType n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -257,6 +389,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> "int"
     */
+    @Override
     public String visit(IntegerType n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -269,6 +402,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     *       | WhileStatement()
     *       | PrintStatement()
     */
+    @Override
     public String visit(Statement n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -278,6 +412,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> ( Statement() )*
     * f2 -> "}"
     */
+    @Override
     public String visit(Block n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -292,6 +427,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f2 -> Expression()
     * f3 -> ";"
     */
+    @Override
     public String visit(AssignmentStatement n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -310,6 +446,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f5 -> Expression()
     * f6 -> ";"
     */
+    @Override
     public String visit(ArrayAssignmentStatement n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -331,6 +468,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f5 -> "else"
     * f6 -> Statement()
     */
+    @Override
     public String visit(IfStatement n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -350,6 +488,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f3 -> ")"
     * f4 -> Statement()
     */
+    @Override
     public String visit(WhileStatement n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -367,6 +506,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f3 -> ")"
     * f4 -> ";"
     */
+    @Override
     public String visit(PrintStatement n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -388,6 +528,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     *       | MessageSend()
     *       | Clause()
     */
+    @Override
     public String visit(Expression n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -397,6 +538,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "&&"
     * f2 -> Clause()
     */
+    @Override
     public String visit(AndExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -410,6 +552,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "<"
     * f2 -> PrimaryExpression()
     */
+    @Override
     public String visit(CompareExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -423,6 +566,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "+"
     * f2 -> PrimaryExpression()
     */
+    @Override
     public String visit(PlusExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -436,6 +580,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "-"
     * f2 -> PrimaryExpression()
     */
+    @Override
     public String visit(MinusExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -449,6 +594,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "*"
     * f2 -> PrimaryExpression()
     */
+    @Override
     public String visit(TimesExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -463,6 +609,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f2 -> PrimaryExpression()
     * f3 -> "]"
     */
+    @Override
     public String visit(ArrayLookup n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -477,6 +624,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> "."
     * f2 -> "length"
     */
+    @Override
     public String visit(ArrayLength n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -493,6 +641,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f4 -> ( ExpressionList() )?
     * f5 -> ")"
     */
+    @Override
     public String visit(MessageSend n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -508,6 +657,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> Expression()
     * f1 -> ExpressionTail()
     */
+    @Override
     public String visit(ExpressionList n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -518,6 +668,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> ( ExpressionTerm() )*
     */
+    @Override
     public String visit(ExpressionTail n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -526,6 +677,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> ","
     * f1 -> Expression()
     */
+    @Override
     public String visit(ExpressionTerm n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -537,6 +689,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> NotExpression()
     *       | PrimaryExpression()
     */
+    @Override
     public String visit(Clause n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -551,6 +704,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     *       | AllocationExpression()
     *       | BracketExpression()
     */
+    @Override
     public String visit(PrimaryExpression n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -558,6 +712,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> <INTEGER_LITERAL>
     */
+    @Override
     public String visit(IntegerLiteral n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -565,6 +720,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> "true"
     */
+    @Override
     public String visit(TrueLiteral n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -572,6 +728,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> "false"
     */
+    @Override
     public String visit(FalseLiteral n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -579,13 +736,15 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     /**
      * f0 -> <IDENTIFIER>
     */
+    @Override
     public String visit(Identifier n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        return n.f0.toString();
     }
 
     /**
      * f0 -> "this"
     */
+    @Override
     public String visit(ThisExpression n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -594,6 +753,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> BooleanArrayAllocationExpression()
     *       | IntegerArrayAllocationExpression()
     */
+    @Override
     public String visit(ArrayAllocationExpression n, Void argu) throws Exception {
         return n.f0.accept(this, argu);
     }
@@ -605,6 +765,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f3 -> Expression()
     * f4 -> "]"
     */
+    @Override
     public String visit(BooleanArrayAllocationExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -622,6 +783,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f3 -> Expression()
     * f4 -> "]"
     */
+    @Override
     public String visit(IntegerArrayAllocationExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -638,6 +800,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f2 -> "("
     * f3 -> ")"
     */
+    @Override
     public String visit(AllocationExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -651,6 +814,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
      * f0 -> "!"
     * f1 -> Clause()
     */
+    @Override
     public String visit(NotExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
@@ -663,6 +827,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     * f1 -> Expression()
     * f2 -> ")"
     */
+    @Override
     public String visit(BracketExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);

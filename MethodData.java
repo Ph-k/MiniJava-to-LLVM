@@ -106,9 +106,14 @@ public class MethodData {
         return (varType != null) ?  varType : findArgument(varName);
     }
 
-    // Returns Nth argument
+    // Returns Nth argument type
     public String findNArng(int index) {
         return argumentsMap.get(index);
+    }
+
+    // Returns Nth argument name
+    public String findNArngName(int index) {
+        return argumentsMap.getName(index);
     }
 
     public String getReturnType(){
@@ -158,6 +163,10 @@ public class MethodData {
 
     public int getArgsCount() {
         return this.argumentsMap.size();
+    }
+
+    public Map<String,String> getVariables(){
+        return variableMap;
     }
 
 }

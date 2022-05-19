@@ -27,6 +27,10 @@ public class ClassData {
         return currentVariableOffset;
     }
 
+    public Map<String, MethodData> getMethodMap(){
+        return methodMap;
+    }
+
     protected void methodOffsetIncreaser(){
         currentMethodOffset += 8;
     }

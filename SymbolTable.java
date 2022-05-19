@@ -6,6 +6,10 @@ public class SymbolTable {
     private Map<String, ClassData> classMap = new LinkedHashMap<String, ClassData>();
     private ClassData mainClassRef;
 
+    public Map<String, ClassData> getClassMap(){
+        return classMap;
+    }
+
     public ClassData addClass(String className, ClassData parrentClassRef) throws Exception{
         ClassData newClassData;
         if(parrentClassRef == null){
