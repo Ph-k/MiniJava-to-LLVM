@@ -52,6 +52,12 @@ public class Main {
                 System.out.println("No type erros for program " + args[i] + " were found, offsets:");
                 symbolTable.printOffsets();
 
+                String basename = args[i].substring(args[i].lastIndexOf("/") + 1);
+                LlvmVisitor llvmVisitor = new LlvmVisitor(basename.substring(0, basename.length() - 4) + "ll");
+                root.accept(llvmVisitor, null);
+
+                llvmVisitor.close();
+
             }
             catch(ParseException ex){
                 System.out.print("At program " + args[i] + " the following parsing error was encountered:\n\t");
