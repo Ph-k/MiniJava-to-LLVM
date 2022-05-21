@@ -2,6 +2,7 @@ import syntaxtree.*;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 
 public class Main {
@@ -53,10 +54,15 @@ public class Main {
                 symbolTable.printOffsets();
 
                 String basename = args[i].substring(args[i].lastIndexOf("/") + 1);
-                LlvmVisitor llvmVisitor = new LlvmVisitor(basename.substring(0, basename.length() - 4) + "ll",symbolTable);
+
+                FileWriter llOuput = new FileWriter(basename.substring(0, basename.length() - 4) + "ll");
+                /*VtableVisitor vtableVisitor = new VtableVisitor(llOuput,symbolTable);
+                root.accept(vtableVisitor, null);*/
+
+                LlvmVisitor llvmVisitor = new LlvmVisitor(llOuput,symbolTable);
                 root.accept(llvmVisitor, null);
 
-                llvmVisitor.close();
+                llOuput.close();
 
             }
             catch(ParseException ex){

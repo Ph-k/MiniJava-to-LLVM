@@ -1,4 +1,5 @@
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 // This class represents a class (that does NOT extend), and holds all the nessesery information about it.
@@ -126,6 +127,18 @@ public class ClassData {
     }
 
     public boolean methodsCheck() throws Exception{
+        throw new Exception("You called a ExtendedClassData method from a simple ClassData!");
+    }
+
+    public ArrayList<ClassData> getParents(){
+        return new ArrayList<ClassData>();
+    }
+
+    protected void addParents(ArrayList<ClassData> parentsList) {
+        parentsList.add(this);
+    }
+
+    public MethodData findMethodNoParents(String key) throws Exception{
         throw new Exception("You called a ExtendedClassData method from a simple ClassData!");
     }
 

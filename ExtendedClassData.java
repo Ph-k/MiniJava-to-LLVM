@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Map;
 
 // It has the same functionality as the SimpleClassData
@@ -23,6 +24,11 @@ public class ExtendedClassData extends ClassData {
             // If the requested method was not found, maybe a parrent class has it
             return parrentClassRef.findMethod(methodName);
         }
+    }
+
+    // When creating the Vtable, we need to know if a method exists only in this class, not in the parents
+    public MethodData findMethodNoParents(String methodName){
+        return methodMap.get(methodName);
     }
 
     public String findVariable(String variableName){
@@ -83,4 +89,14 @@ public class ExtendedClassData extends ClassData {
         return name.equals(type) || parrentClassRef.checkParrentType(type);
     }
 
+    public ArrayList<ClassData> getParents(){
+        ArrayList<ClassData> parentsList = new ArrayList<ClassData>();
+        parrentClassRef.addParents(parentsList);
+        return parentsList;
+    }
+
+    protected void addParents(ArrayList<ClassData> parentsList){
+        parentsList.add(this);
+        parrentClassRef.addParents(parentsList);
+    }
 }

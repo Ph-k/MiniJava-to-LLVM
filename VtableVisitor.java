@@ -1,79 +1,17 @@
 import syntaxtree.*;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
 
 import visitor.GJDepthFirst;
 
-public class LlvmVisitor extends GJDepthFirst<String, Void>{
+public class VtableVisitor extends GJDepthFirst<String, Void>{
     FileWriter llOutput;
     private SymbolTable symbolTable;
+    boolean firstClassMethod;
 
-    private void writeMethod(MethodData methodData, boolean firstItter, String className) throws IOException{
-        int i;
-        String argType;
-        String tempString;
-            
-            // Writing return type
-            tempString = "\n\ti8* bitcast (" + toLlType(methodData.getReturnType()) + " (i8*";
-            if(!firstItter)
-                tempString = ", " + tempString; // Adding comma if needed
-            else
-                firstItter=false;
-            llOutput.write(tempString);
-
-            // And type of args
-            for(i=0; i < methodData.getArgsCount(); i++ ){
-                argType = methodData.findNArng(i);
-                llOutput.write("," + toLlType(argType) /*+ (((i+1) < methodData.getArgsCount()) ? ", " : ")*")*/);
-            }
-
-            // And name of method
-            llOutput.write(")* @" + className + "." + methodData.getName() + " to i8*)");
-    }
-
-    private void writeMethods(ClassData classData, boolean firstItter, ClassData extendedClass) throws Exception{
-        MethodData overideMethod;
-        for (Map.Entry<String,MethodData> methodEntry : classData.getMethodMap().entrySet()){
-            if(methodEntry.getValue().overrides() == false)
-                if( extendedClass == null ){
-                    writeMethod(methodEntry.getValue(),firstItter,classData.name);
-                }else{
-                    overideMethod = extendedClass.findMethodNoParents(methodEntry.getKey());
-                    if(overideMethod!=null){
-                        writeMethod(overideMethod,firstItter,extendedClass.name);
-                    }else /*if(methodEntry.getValue().overrides() == false)*/{
-                        writeMethod(methodEntry.getValue(),firstItter,classData.name);
-                    }
-                }
-        }
-    }
-
-    LlvmVisitor(FileWriter givenLlOutput, SymbolTable givenSymbolTable) throws Exception{
+    VtableVisitor(FileWriter givenLlOutput, SymbolTable givenSymbolTable) throws IOException{
         llOutput = givenLlOutput;
         symbolTable = givenSymbolTable;
-
-        ClassData classData;
-        int i;
-        ArrayList<ClassData> parentsList;
-        //Creating Vtable for each class
-        for (Map.Entry<String,ClassData> classEntry : symbolTable.getClassMap().entrySet()){
-            classData = classEntry.getValue();
-            if(classData != symbolTable.getMainClassRef() ){
-                // Vtables name, and number of methods
-                llOutput.write("@." + classEntry.getKey() + "_Vtable = global [" + classData.getMethodMap().size() + " x i8*] [" );
-
-                parentsList = classData.getParents();
-                for (i = 0; i < parentsList.size(); i++){
-                    writeMethods(parentsList.get(i),true,classData);
-                }
-                writeMethods(classData,true,null);
-                llOutput.write("\n                                ]\n\n");
-            }else{
-                llOutput.write("@." + classEntry.getKey() + "_Vtable = global [0 x i8*] []\n\n" );
-            }
-        }
     }
 
     private class LastVisited{
@@ -159,24 +97,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f16.accept(this, argu);
         n.f17.accept(this, argu);
 
-        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "_main" + 
-        " (i8* %this");
-
-        String argType, argName;
-        for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
-            argType = lastVisited.method.findNArng(i);
-            argName = lastVisited.method.findNArngName(i);
-            llOutput.write(", " + toLlType(argType) + " %" + argName );
-        }
-        llOutput.write(") {\n");
-
-        for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
-            llOutput.write("\t%" + entry.getKey() + " = alloca " + toLlType(entry.getValue()) + "\n" );
-        }
-
-        lastVisited.classRef = null;
-        lastVisited.method = null;
-        llOutput.write("}\n\n");
+        llOutput.write("@." + className + "_Vtable = global [0 x i8*] []\n\n" );
 
         return _ret;
     }
@@ -204,12 +125,16 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
         lastVisited.classRef = symbolTable.findClass(className);
+        llOutput.write("@." + lastVisited.classRef.getName() + "_Vtable = global [" + lastVisited.classRef.getMethodMap().size() + " x i8*] [" );
+        firstClassMethod = true;
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
 
         lastVisited.classRef = null;
+
+        llOutput.write("\n]\n\n");
 
         return _ret;
     }
@@ -233,12 +158,16 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         lastVisited.classRef = symbolTable.findClass(className);
+        llOutput.write("@." + lastVisited.classRef.getName() + "_Vtable = global [" + lastVisited.classRef.getMethodMap().size() + " x i8*] [" );
+        firstClassMethod = true;
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         n.f7.accept(this, argu);
 
         lastVisited.classRef = null;
+
+        llOutput.write("\n]\n\n");
 
         return _ret;
     }
@@ -290,34 +219,22 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
 
-        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "." + methodName + 
-        " (i8* %this");
+        if(!firstClassMethod)
+            llOutput.write(",");
+        else
+            firstClassMethod=false;
+
+        llOutput.write("\n\ti8* bitcast (" + toLlType(lastVisited.method.getReturnType()) + " (i8*");
 
         // Writing args
-        String argType, argName;
+        String argType;
         for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
             argType = lastVisited.method.findNArng(i);
-            argName = lastVisited.method.findNArngName(i);
-            llOutput.write(", " + toLlType(argType) + " %." + argName );
+            llOutput.write(", " + toLlType(argType));
         }
-        llOutput.write(") {\n");
-
-        // Allocating local vars for args
-        for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
-            argType = lastVisited.method.findNArng(i);
-            argName = lastVisited.method.findNArngName(i);
-            llOutput.write("\t%" + argName + " = alloca " + toLlType(argType) + "\n" +
-                           "\tstore " + toLlType(argType) + " %." + argName + ", " + toLlType(argType) +  "* %" + argName + "\n");
-        }
-        llOutput.write("\n");
-
-        // Allocating vars
-        for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
-            llOutput.write("\t%" + entry.getKey() + " = alloca " + toLlType(entry.getValue()) + "\n" );
-        }
+        llOutput.write(")* @" + lastVisited.classRef.getName() + "." + methodName + " to i8*)");
 
         lastVisited.method = null;
-        llOutput.write("}\n\n");
         return _ret;
     }
 
