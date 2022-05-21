@@ -17,27 +17,40 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String argType;
         ClassData classData;
         MethodData methodData;
+        boolean firstItter;
+        String tempString;
         //Creating Vtable for each class
         for (Map.Entry<String,ClassData> classEntry : symbolTable.getClassMap().entrySet()){
             classData = classEntry.getValue();
-            // Vtables name, and number of methods
-            llOutput.write("@" + classEntry.getKey() + "_Vtable = global [" + classData.getMethodMap().size() + " x i8*] [" );
-            // For each method
-            for (Map.Entry<String,MethodData> methodEntry : classData.getMethodMap().entrySet()){
-                // Writing return type
-                llOutput.write("\n\ti8* bitcast (" + toLlType(methodEntry.getValue().getReturnType()) + " (");
+            if(classData != symbolTable.getMainClassRef() ){
+                // Vtables name, and number of methods
+                llOutput.write("@." + classEntry.getKey() + "_Vtable = global [" + classData.getMethodMap().size() + " x i8*] [" );
+                // Writing the this argument
+                // For each method
+                firstItter=true;
+                for (Map.Entry<String,MethodData> methodEntry : classData.getMethodMap().entrySet()){
+                    // Writing return type
+                    tempString = "\n\ti8* bitcast (" + toLlType(methodEntry.getValue().getReturnType()) + " (i8*";
+                    if(!firstItter)
+                        tempString = ", " + tempString; // Adding comma if needed
+                    else
+                        firstItter=false;
+                    llOutput.write(tempString);
 
-                // And type of args
-                methodData = methodEntry.getValue();
-                for(i=0; i < methodData.getArgsCount(); i++ ){
-                    argType = methodData.findNArng(i);
-                    llOutput.write(toLlType(argType) + (((i+1) < methodData.getArgsCount()) ? ", " : ")*"));
+                    // And type of args
+                    methodData = methodEntry.getValue();
+                    for(i=0; i < methodData.getArgsCount(); i++ ){
+                        argType = methodData.findNArng(i);
+                        llOutput.write("," + toLlType(argType) /*+ (((i+1) < methodData.getArgsCount()) ? ", " : ")*")*/);
+                    }
+
+                    // And name of method
+                    llOutput.write(")* @" + classData.name + "." + methodEntry.getKey() + " to i8*)");
                 }
-
-                // And name of method
-                llOutput.write(" @" + classData.name + "_" + methodEntry.getKey() + " to i8*)\n");
+                llOutput.write("\n                                ]\n\n");
+            }else{
+                llOutput.write("@." + classEntry.getKey() + "_Vtable = global [0 x i8*] []\n\n" );
             }
-            llOutput.write("                                ]\n\n");
         }
     }
 
@@ -61,7 +74,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             case "void":
                 return "void";
             default:
-                return "i32*";
+                return "i8*";
         }
     }
 
@@ -255,7 +268,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
 
-        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "_" + methodName + 
+        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "." + methodName + 
         " (i8* %this");
 
         // Writing args

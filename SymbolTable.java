@@ -106,4 +106,7 @@ public class SymbolTable {
         return false;
     }
 
+    public ClassData getMainClassRef(){
+        return mainClassRef;
+    }
 }
