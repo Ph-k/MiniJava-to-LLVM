@@ -35,17 +35,19 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
     private void writeMethods(ClassData classData, boolean firstItter, ClassData extendedClass) throws Exception{
         MethodData overideMethod;
+        ClassData overideClass;
         for (Map.Entry<String,MethodData> methodEntry : classData.getMethodMap().entrySet()){
-            if(methodEntry.getValue().overrides() == false)
+            if(!methodEntry.getValue().overrides())
                 if( extendedClass == null ){
                     writeMethod(methodEntry.getValue(),firstItter,classData.name);
                 }else{
-                    overideMethod = extendedClass.findMethodNoParents(methodEntry.getKey());
+                    overideMethod = extendedClass.findMethod(methodEntry.getKey());
+                    overideClass = extendedClass.findMethodClass(methodEntry.getKey());
                     if(overideMethod!=null){
-                        writeMethod(overideMethod,firstItter,extendedClass.name);
-                    }else /*if(methodEntry.getValue().overrides() == false)*/{
+                        writeMethod(overideMethod,firstItter,overideClass.name);
+                    }/*else /*if(methodEntry.getValue().overrides() == false)*//*{
                         writeMethod(methodEntry.getValue(),firstItter,classData.name);
-                    }
+                    }*/
                 }
         }
     }
@@ -55,16 +57,23 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         symbolTable = givenSymbolTable;
 
         ClassData classData;
-        int i;
+        int i, numberOfMethods;
         ArrayList<ClassData> parentsList;
         //Creating Vtable for each class
         for (Map.Entry<String,ClassData> classEntry : symbolTable.getClassMap().entrySet()){
             classData = classEntry.getValue();
             if(classData != symbolTable.getMainClassRef() ){
                 // Vtables name, and number of methods
-                llOutput.write("@." + classEntry.getKey() + "_Vtable = global [" + classData.getMethodMap().size() + " x i8*] [" );
-
                 parentsList = classData.getParents();
+                numberOfMethods = classData.getNumberOfNonOverridingMethods();
+
+                for (i = 0; i < parentsList.size(); i++){
+                    numberOfMethods += parentsList.get(i).getNumberOfNonOverridingMethods();
+                }
+
+                llOutput.write("@." + classEntry.getKey() + "_Vtable = global [" + numberOfMethods + " x i8*] [" );
+
+
                 for (i = 0; i < parentsList.size(); i++){
                     writeMethods(parentsList.get(i),true,classData);
                 }

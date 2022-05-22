@@ -26,9 +26,13 @@ public class ExtendedClassData extends ClassData {
         }
     }
 
-    // When creating the Vtable, we need to know if a method exists only in this class, not in the parents
-    public MethodData findMethodNoParents(String methodName){
-        return methodMap.get(methodName);
+    public ClassData findMethodClass(String methodName){
+        if(methodMap.get(methodName) != null){
+            return this;
+        }else{
+            // If the requested method was not found, maybe a parrent class has it
+            return parrentClassRef.findMethodClass(methodName);
+        }
     }
 
     public String findVariable(String variableName){
@@ -96,7 +100,7 @@ public class ExtendedClassData extends ClassData {
     }
 
     protected void addParents(ArrayList<ClassData> parentsList){
-        parentsList.add(this);
         parrentClassRef.addParents(parentsList);
+        parentsList.add(this);
     }
 }

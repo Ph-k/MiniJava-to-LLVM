@@ -138,8 +138,17 @@ public class ClassData {
         parentsList.add(this);
     }
 
-    public MethodData findMethodNoParents(String key) throws Exception{
-        throw new Exception("You called a ExtendedClassData method from a simple ClassData!");
+    public int getNumberOfNonOverridingMethods() {
+        int s=0;
+        for (Map.Entry<String,MethodData> entry : methodMap.entrySet()){
+            if(!entry.getValue().overrides())
+                s++;
+        }
+        return s;
+    }
+
+    public ClassData findMethodClass(String methodName){
+        return methodMap.get(methodName)!=null? this : null ;
     }
 
 }
