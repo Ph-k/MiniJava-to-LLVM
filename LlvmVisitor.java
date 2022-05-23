@@ -9,6 +9,7 @@ import visitor.GJDepthFirst;
 public class LlvmVisitor extends GJDepthFirst<String, Void>{
     FileWriter llOutput;
     private SymbolTable symbolTable;
+    private String expressionVar;
 
     private void writeMethod(MethodData methodData, boolean firstItter, String className) throws IOException{
         int i;
@@ -83,6 +84,21 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                 llOutput.write("@." + classEntry.getKey() + "_Vtable = global [0 x i8*] []\n\n" );
             }
         }
+
+        llOutput.write("declare i8* @calloc(i32, i32)\n" +
+                       "declare i32 @printf(i8*, ...)\n" +
+                       "declare void @exit(i32)\n\n" +
+                       "@_cint = constant [4 x i8] c\"%d\\0a\\00\"\n" +
+                       "@_cOOB = constant [15 x i8] c\"Out of bounds\\0a\\00\"\n" +
+                       "define void @print_int(i32 %i) {\n" +
+                       "\t%_str = bitcast [4 x i8]* @_cint to i8*\n" +
+                       "\tcall i32 (i8*, ...) @printf(i8* %_str, i32 %i)\n" +
+                       "\tret void\n}\n\n" +
+                       "define void @throw_oob() {\n" +
+                       "\t%_str = bitcast [15 x i8]* @_cOOB to i8*\n" +
+                       "\tcall i32 (i8*, ...) @printf(i8* %_str)\n" +
+                       "\tcall void @exit(i32 1)\n" +
+                       "\tret void\n}\n\n");
     }
 
     private class LastVisited{
@@ -156,21 +172,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         lastVisited.method = lastVisited.classRef.findMethod("main");
-        n.f7.accept(this, argu);
-        n.f8.accept(this, argu);
-        n.f9.accept(this, argu);
-        n.f10.accept(this, argu);
-        n.f11.accept(this, argu);
-        n.f12.accept(this, argu);
-        n.f13.accept(this, argu);
-        n.f14.accept(this, argu);
-        n.f15.accept(this, argu);
-        n.f16.accept(this, argu);
-        n.f17.accept(this, argu);
-
         llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "_main" + 
         " (i8* %this");
-
         String argType, argName;
         for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
             argType = lastVisited.method.findNArng(i);
@@ -182,6 +185,17 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
             llOutput.write("\t%" + entry.getKey() + " = alloca " + toLlType(entry.getValue()) + "\n" );
         }
+        n.f7.accept(this, argu);
+        n.f8.accept(this, argu);
+        n.f9.accept(this, argu);
+        n.f10.accept(this, argu);
+        n.f11.accept(this, argu);
+        n.f12.accept(this, argu);
+        n.f13.accept(this, argu);
+        n.f14.accept(this, argu);
+        n.f15.accept(this, argu);
+        n.f16.accept(this, argu);
+        n.f17.accept(this, argu);
 
         lastVisited.classRef = null;
         lastVisited.method = null;
@@ -288,20 +302,11 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f1.accept(this, argu);
         String methodName = n.f2.accept(this, argu);
         lastVisited.method = lastVisited.classRef.findMethod(methodName);
+        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "." + methodName + 
+        " (i8* %this");
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
-        n.f6.accept(this, argu);
-        n.f7.accept(this, argu);
-        n.f8.accept(this, argu);
-        n.f9.accept(this, argu);
-        n.f10.accept(this, argu);
-        n.f11.accept(this, argu);
-        n.f12.accept(this, argu);
-
-        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "." + methodName + 
-        " (i8* %this");
-
         // Writing args
         String argType, argName;
         for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
@@ -310,7 +315,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             llOutput.write(", " + toLlType(argType) + " %." + argName );
         }
         llOutput.write(") {\n");
-
+        n.f6.accept(this, argu);
+        n.f7.accept(this, argu);
         // Allocating local vars for args
         for(int i=0; i < lastVisited.method.getArgsCount(); i++ ){
             argType = lastVisited.method.findNArng(i);
@@ -324,6 +330,11 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
             llOutput.write("\t%" + entry.getKey() + " = alloca " + toLlType(entry.getValue()) + "\n" );
         }
+        n.f8.accept(this, argu);
+        n.f9.accept(this, argu);
+        n.f10.accept(this, argu);
+        n.f11.accept(this, argu);
+        n.f12.accept(this, argu);
 
         lastVisited.method = null;
         llOutput.write("}\n\n");
@@ -474,7 +485,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(AssignmentStatement n, Void argu) throws Exception {
         String _ret=null;
-        n.f0.accept(this, argu);
+        expressionVar = "%" + n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
@@ -688,12 +699,31 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(MessageSend n, Void argu) throws Exception {
         String _ret=null;
-        n.f0.accept(this, argu);
+        String callingObject = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String callingMethod = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+
+        String callingObjectVar = lastVisited.method.getNewVar(),
+               callingObjectCasted = lastVisited.method.getNewVar(),
+               callingObjectLoaded = lastVisited.method.getNewVar(),
+               callingObjectPrt = lastVisited.method.getNewVar(),
+               callingMethodLoaded = lastVisited.method.getNewVar(),
+               callingMethodCasted = lastVisited.method.getNewVar(),
+               callingMethodReturnValue = lastVisited.method.getNewVar();
+
+        llOutput.write("\n" +
+                       "\t" + callingObjectVar + " = load i8*, i8** " + callingObject + "\n" +
+                       "\t" + callingObjectCasted + " = bitcast i8* " + callingObjectVar + " to i8*** \n" +
+                       "\t" + callingObjectLoaded + " = load i8**, i8*** " + callingObjectCasted + "\n" +
+                       "\t" + callingObjectPrt + " = getelementptr i8*, i8** " + callingObjectLoaded + ", i32 OFFSET\n" +
+                       "\t" + callingMethodLoaded + " = load i8*, i8** " + callingObjectPrt + "\n" +
+                       "\t" + callingMethodCasted + " = bitcast i8* " + callingMethodLoaded + " to i1 (i8*,i32)*\n" + 
+                       "\t" + callingMethodReturnValue + " = call i1 %_8(i8* " + callingObjectVar + ", i32 16)\n"
+        );
+
         return _ret;
     }
 
@@ -848,9 +878,27 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     public String visit(AllocationExpression n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String className = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+
+        ClassData classRef = symbolTable.findClass(className);
+        if(classRef == null) throw new Exception("Class " + classRef + " does not exist");
+        String objectVar = lastVisited.method.getNewVar(),
+               castedObjectVar = lastVisited.method.getNewVar(),
+               VtablePointer = lastVisited.method.getNewVar();
+
+        int objectSize = classRef.getVariableOffset() + 8;
+
+        llOutput.write("\n" + 
+            "\t" + objectVar + " = call i8* @calloc(i32 1, i32 " + objectSize + ")\n" + 
+            "\t" + castedObjectVar + " = bitcast i8* " + objectVar + " to i8***\n" +
+            "\t" + VtablePointer + " = getelementptr [" + classRef.getNumberOfNonOverridingMethods() + " x i8*], " + 
+            "[" + classRef.getNumberOfNonOverridingMethods() + " x i8*]* @." + className + "_Vtable, i32 0, i32 0\n" +
+            "\tstore i8** " + VtablePointer + ", i8*** " + castedObjectVar + "\n\n" + 
+            "\tstore i8* " + objectVar + ", i8** " + expressionVar + "\n" 
+        );
+
         return _ret;
     }
 

@@ -63,12 +63,14 @@ public class MethodData {
     private String returnType, name;
     private int offset;
     private boolean override; // True if function overides another
+    private int varIndex;
 
     MethodData(String givenName, String givenReturnType, int givenOffest, boolean givenOverride){
         returnType = givenReturnType;
         name = givenName;
         offset = givenOffest;
         override = givenOverride;
+        varIndex = 0;
     }
 
     public boolean overrides(){
@@ -167,6 +169,10 @@ public class MethodData {
 
     public Map<String,String> getVariables(){
         return variableMap;
+    }
+
+    public String getNewVar(){
+        return "%_" + Integer.toString(varIndex++);
     }
 
 }

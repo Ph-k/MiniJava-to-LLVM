@@ -51,7 +51,7 @@ public class Main {
                 }
 
                 System.out.println("No type erros for program " + args[i] + " were found, offsets:");
-                symbolTable.printOffsets();
+                symbolTable.printClasses();//printOffsets();
 
                 String basename = args[i].substring(args[i].lastIndexOf("/") + 1);
 
