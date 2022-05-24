@@ -2,6 +2,7 @@ import syntaxtree.*;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import visitor.GJDepthFirst;
@@ -9,7 +10,9 @@ import visitor.GJDepthFirst;
 public class LlvmVisitor extends GJDepthFirst<String, Void>{
     FileWriter llOutput;
     private SymbolTable symbolTable;
-    private String expressionVar;
+    private String resultVar,resultLlType;
+
+    private List<String> argumentList = new ArrayList<String>();
 
     private void writeMethod(MethodData methodData, boolean firstItter, String className) throws IOException{
         int i;
@@ -123,6 +126,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             default:
                 return "i8*";
         }
+    }
+
+    private boolean isStaticValue(String value){
+        return !(value.equals("int") || value.equals("int[]") || value.equals("boolean") || value.equals("boolean[]"));
     }
 
    /**
@@ -332,7 +339,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         }
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
-        n.f10.accept(this, argu);
+        String returnVal = n.f10.accept(this, argu);
+        llOutput.write("\tret " + toLlType(lastVisited.method.getReturnType()) + " " + (isStaticValue(returnVal)? returnVal : resultVar) + "\n");
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
 
@@ -485,9 +493,11 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(AssignmentStatement n, Void argu) throws Exception {
         String _ret=null;
-        expressionVar = "%" + n.f0.accept(this, argu);
+        String expressionVar = "%" + n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
+        llOutput.write("\tstore " + resultLlType + " " + resultVar + ", " + resultLlType +  "* " + expressionVar + "\n");
+        resultVar = null; resultLlType = null;
         n.f3.accept(this, argu);
         return _ret;
     }
@@ -566,9 +576,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String expr = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
+        llOutput.write("\tcall void (i32) @print_int(i32 " + (isStaticValue(expr)? expr : resultVar) + ")\n\n");
         return _ret;
     }
 
@@ -595,11 +606,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(AndExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "boolean";
     }
 
     /**
@@ -609,11 +619,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(CompareExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "boolean";
     }
 
     /**
@@ -623,11 +632,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(PlusExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "int";
     }
 
     /**
@@ -637,11 +645,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(MinusExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "int";
     }
 
     /**
@@ -651,11 +658,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(TimesExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "int";
     }
 
     /**
@@ -666,12 +672,19 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(ArrayLookup n, Void argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
+
+        //String _ret=null;
+        String type1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        return _ret;
+
+        type1 = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, type1);
+
+        if( type1.equals("int[]") ){
+            return "int";
+        }else if( type1.equals("boolean[]") ) {
+            return "boolean";
+        }else throw new Exception("invalid arrey type: " + type1);
     }
 
     /**
@@ -681,11 +694,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(ArrayLength n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return "int";
     }
 
     /**
@@ -698,13 +710,23 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(MessageSend n, Void argu) throws Exception {
-        String _ret=null;
         String callingObject = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String callingMethod = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        argumentList.clear(); // Clearing the list before using it again
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+
+        ClassData callingClassRef = symbolTable.findClass(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, callingObject));
+        if( callingClassRef == null ){
+            throw new Exception("Class " + callingObject + " has not been declared!");
+        }
+
+        MethodData callingMethodRef = callingClassRef.findMethod(callingMethod);
+        if( callingMethodRef == null ){
+            throw new TypeCheckingException("Method " + callingMethod + " is not a member of " + callingClassRef.getName());
+        }
 
         String callingObjectVar = lastVisited.method.getNewVar(),
                callingObjectCasted = lastVisited.method.getNewVar(),
@@ -712,19 +734,31 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                callingObjectPrt = lastVisited.method.getNewVar(),
                callingMethodLoaded = lastVisited.method.getNewVar(),
                callingMethodCasted = lastVisited.method.getNewVar(),
-               callingMethodReturnValue = lastVisited.method.getNewVar();
+               callingMethodReturnVar = lastVisited.method.getNewVar();
 
         llOutput.write("\n" +
-                       "\t" + callingObjectVar + " = load i8*, i8** " + callingObject + "\n" +
-                       "\t" + callingObjectCasted + " = bitcast i8* " + callingObjectVar + " to i8*** \n" +
-                       "\t" + callingObjectLoaded + " = load i8**, i8*** " + callingObjectCasted + "\n" +
-                       "\t" + callingObjectPrt + " = getelementptr i8*, i8** " + callingObjectLoaded + ", i32 OFFSET\n" +
-                       "\t" + callingMethodLoaded + " = load i8*, i8** " + callingObjectPrt + "\n" +
-                       "\t" + callingMethodCasted + " = bitcast i8* " + callingMethodLoaded + " to i1 (i8*,i32)*\n" + 
-                       "\t" + callingMethodReturnValue + " = call i1 %_8(i8* " + callingObjectVar + ", i32 16)\n"
+                        "\t" + callingObjectVar + " = load i8*, i8** %" + callingObject + "\n" +
+                        "\t" + callingObjectCasted + " = bitcast i8* " + callingObjectVar + " to i8***\n" +
+                        "\t" + callingObjectLoaded + " = load i8**, i8*** " + callingObjectCasted + "\n" +
+                        "\t" + callingObjectPrt + " = getelementptr i8*, i8** " + callingObjectLoaded + ", i32 " + callingMethodRef.getOffset()/8 + "\n" +
+                        "\t" + callingMethodLoaded + " = load i8*, i8** " + callingObjectPrt + "\n" +
+                        "\t" + callingMethodCasted + " = bitcast i8* " + callingMethodLoaded + " to " + toLlType(callingMethodRef.getReturnType()) + " (i8*");
+
+        String argType, methodLLAgrs = "", methodLLAgrsNvalues = "";
+        for(int i=0; i < callingMethodRef.getArgsCount(); i++ ){
+            argType = callingMethodRef.findNArng(i);
+            methodLLAgrs += ", " + toLlType(argType);
+            methodLLAgrsNvalues += ", " + toLlType(argType) + " " + argumentList.get(i);
+        }
+
+        llOutput.write(methodLLAgrs + ")*\n" + 
+                       "\t" + callingMethodReturnVar + " = call " + toLlType(callingMethodRef.getReturnType()) + " " + callingMethodCasted + "(i8* " + callingObjectVar + methodLLAgrsNvalues + " )\n\n"
         );
 
-        return _ret;
+        resultVar = callingMethodReturnVar;
+        resultLlType = toLlType(callingMethodRef.getReturnType());
+
+        return callingMethodRef.getReturnType();
     }
 
     /**
@@ -734,7 +768,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(ExpressionList n, Void argu) throws Exception {
         String _ret=null;
-        n.f0.accept(this, argu);
+        String arg = n.f0.accept(this, argu);
+        argumentList.add(arg);
         n.f1.accept(this, argu);
         return _ret;
     }
@@ -755,7 +790,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     public String visit(ExpressionTerm n, Void argu) throws Exception {
         String _ret=null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String arg = n.f1.accept(this, argu);
+        argumentList.add(arg);
         return _ret;
     }
 
@@ -780,36 +816,40 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(PrimaryExpression n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        String _f0 = n.f0.accept(this, argu);
+        if ( _f0.equals("this") ) return "this";
+        return _f0;
     }
 
     /**
      * f0 -> <INTEGER_LITERAL>
-    */
+     */
     @Override
     public String visit(IntegerLiteral n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        return n.f0.toString();//.accept(this, argu);
     }
 
     /**
      * f0 -> "true"
-    */
+     */
     @Override
     public String visit(TrueLiteral n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        n.f0.accept(this, argu);
+        return "true";
     }
 
     /**
      * f0 -> "false"
-    */
+     */
     @Override
     public String visit(FalseLiteral n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        n.f0.accept(this, argu);
+        return "false";
     }
 
     /**
      * f0 -> <IDENTIFIER>
-    */
+     */
     @Override
     public String visit(Identifier n, Void argu) throws Exception {
         return n.f0.toString();
@@ -817,10 +857,11 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
     /**
      * f0 -> "this"
-    */
+     */
     @Override
     public String visit(ThisExpression n, Void argu) throws Exception {
-        return n.f0.accept(this, argu);
+        n.f0.accept(this, argu);
+        return lastVisited.classRef.getName();
     }
 
     /**
@@ -841,13 +882,13 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(BooleanArrayAllocationExpression n, Void argu) throws Exception {
-        String _ret=null;
+        //String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
-        return _ret;
+        return "boolean[]";//return _ret;
     }
 
     /**
@@ -859,13 +900,13 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(IntegerArrayAllocationExpression n, Void argu) throws Exception {
-        String _ret=null;
+        //String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
-        return _ret;
+        return "int[]";//return _ret;
     }
 
     /**
@@ -876,7 +917,6 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(AllocationExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
         String className = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -895,11 +935,13 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             "\t" + castedObjectVar + " = bitcast i8* " + objectVar + " to i8***\n" +
             "\t" + VtablePointer + " = getelementptr [" + classRef.getNumberOfNonOverridingMethods() + " x i8*], " + 
             "[" + classRef.getNumberOfNonOverridingMethods() + " x i8*]* @." + className + "_Vtable, i32 0, i32 0\n" +
-            "\tstore i8** " + VtablePointer + ", i8*** " + castedObjectVar + "\n\n" + 
-            "\tstore i8* " + objectVar + ", i8** " + expressionVar + "\n" 
+            "\tstore i8** " + VtablePointer + ", i8*** " + castedObjectVar + "\n\n"
         );
 
-        return _ret;
+        resultVar = objectVar;
+        resultLlType = "i8*";
+
+        return className;
     }
 
     /**
@@ -908,10 +950,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(NotExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        return _ret;
+        String clauseType = n.f1.accept(this, argu);
+        //clauseType = symbolTable.findVarType(lastVisited.classRef,lastVisited.method,clauseType);
+        return clauseType;
     }
 
     /**
@@ -921,11 +963,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(BracketExpression n, Void argu) throws Exception {
-        String _ret=null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String expression = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return _ret;
+        return expression;
     }
 
     /*public void close() throws IOException{
