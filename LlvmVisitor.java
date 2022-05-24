@@ -128,8 +128,16 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         }
     }
 
+    private boolean isBoolean(String type){
+        return type.equals("boolean") || type.equals("true") || type.equals("false");
+    }
+
+    private boolean isInt(String type){
+        return type.equals("int") || type.matches("[0-9]+");
+    }
+
     private boolean isStaticValue(String value){
-        return !(value.equals("int") || value.equals("int[]") || value.equals("boolean") || value.equals("boolean[]"));
+        return isBoolean(value) || isInt(value) || value.equals("int[]") || value.equals("boolean[]");
     }
 
    /**
@@ -340,7 +348,14 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
         String returnVal = n.f10.accept(this, argu);
+        if(returnVal.equals("true")){
+            returnVal = "1";
+        }else if(returnVal.equals("false")){
+            returnVal = "0";
+        }
+
         llOutput.write("\tret " + toLlType(lastVisited.method.getReturnType()) + " " + (isStaticValue(returnVal)? returnVal : resultVar) + "\n");
+
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
 
@@ -493,10 +508,32 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     @Override
     public String visit(AssignmentStatement n, Void argu) throws Exception {
         String _ret=null;
-        String expressionVar = "%" + n.f0.accept(this, argu);
+        String var = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        llOutput.write("\tstore " + resultLlType + " " + resultVar + ", " + resultLlType +  "* " + expressionVar + "\n");
+        String expr = n.f2.accept(this, argu);
+        if(lastVisited.classRef.findVariable(var)!=null && lastVisited.method!=null){
+            String loadedVar, pointerToClassVar, castedClassVar,
+                   exprType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expr);
+            int varOffset = lastVisited.classRef.findVariableOffset(var)+8;
+
+            if(!isStaticValue(expr)){
+                loadedVar = lastVisited.method.getNewVar();
+                llOutput.write("\t" + loadedVar + " = load " + toLlType(exprType) + ", " + toLlType(exprType) + "* %" + expr + "\n");
+            }else loadedVar = expr;
+
+            pointerToClassVar = lastVisited.method.getNewVar();
+            castedClassVar = lastVisited.method.getNewVar();
+            llOutput.write("\t" + pointerToClassVar + " = getelementptr i8, i8* %this, i32 " + varOffset + "\n" +
+                           "\t" + castedClassVar + " = bitcast i8* " + pointerToClassVar + " to " + toLlType(lastVisited.classRef.findVariable(var)) + "*\n");
+            
+            resultVar = loadedVar; resultLlType = toLlType(lastVisited.classRef.findVariable(var)); var = castedClassVar.substring(1);
+            if(resultVar.equals("true")){
+                resultVar = "1";
+            }else if(resultVar.equals("false")){
+                resultVar = "0";
+            }
+        }
+        llOutput.write("\tstore " + resultLlType + " " + resultVar + ", " + resultLlType +  "* %" + var + "\n\n");
         resultVar = null; resultLlType = null;
         n.f3.accept(this, argu);
         return _ret;
@@ -579,7 +616,12 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String expr = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
-        llOutput.write("\tcall void (i32) @print_int(i32 " + (isStaticValue(expr)? expr : resultVar) + ")\n\n");
+
+        String printIntArg;
+        if(resultVar == null){
+            printIntArg = expr;
+        }else printIntArg = isStaticValue(expr)? resultVar : expr;
+        llOutput.write("\tcall void (i32) @print_int(i32 " + printIntArg + ")\n\n");
         return _ret;
     }
 
@@ -752,7 +794,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         }
 
         llOutput.write(methodLLAgrs + ")*\n" + 
-                       "\t" + callingMethodReturnVar + " = call " + toLlType(callingMethodRef.getReturnType()) + " " + callingMethodCasted + "(i8* " + callingObjectVar + methodLLAgrsNvalues + " )\n\n"
+                       "\t" + callingMethodReturnVar + " = call " + toLlType(callingMethodRef.getReturnType()) + " " + callingMethodCasted + "(i8* " + callingObjectVar + methodLLAgrsNvalues + ")\n\n"
         );
 
         resultVar = callingMethodReturnVar;
