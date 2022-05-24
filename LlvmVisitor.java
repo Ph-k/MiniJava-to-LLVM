@@ -348,13 +348,37 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
         String returnVal = n.f10.accept(this, argu);
-        if(returnVal.equals("true")){
-            returnVal = "1";
-        }else if(returnVal.equals("false")){
-            returnVal = "0";
-        }
 
-        llOutput.write("\tret " + toLlType(lastVisited.method.getReturnType()) + " " + (isStaticValue(returnVal)? returnVal : resultVar) + "\n");
+        // When returning a value there are 3 cases:
+
+        if(lastVisited.method.findVariable(returnVal) != null){// Case 1, returning local val
+
+            String retValLoaded = lastVisited.method.getNewVar();
+            llOutput.write("\n\t" + retValLoaded + " = load " + toLlType(lastVisited.method.getReturnType()) + ", " + toLlType(lastVisited.method.getReturnType())  + "* %" + returnVal + "\n" + 
+                           "\tret " + toLlType(lastVisited.method.getReturnType()) + " " + retValLoaded + "\n");
+
+        }else if(lastVisited.classRef.findVariable(returnVal) != null){// Case 2, returning a class field
+
+            String classFieldVarPrt = lastVisited.method.getNewVar(),
+                   classFieldVarCasted = lastVisited.method.getNewVar(),
+                   classFieldVarLoaded = lastVisited.method.getNewVar(),
+                   LlType = toLlType(symbolTable.findVarType(lastVisited.classRef, /*here we have a class field*/ null, returnVal));
+            int varOffset = lastVisited.classRef.findVariableOffset(returnVal)+8;
+
+            llOutput.write("\n\t" + classFieldVarPrt + " = getelementptr i8, i8* %this, i32 " + varOffset + "\n" + 
+                           "\t" + classFieldVarCasted + " = bitcast i8* " + classFieldVarPrt + " to " + LlType + "*\n" +
+                           "\t" + classFieldVarLoaded + " = load " + LlType + ", " + LlType + "* " + classFieldVarCasted + "\n" +
+                           "\tret " + toLlType(lastVisited.method.getReturnType()) + " " + classFieldVarLoaded + "\n");
+
+        }else{ // Case 3, returning a static value
+
+            if(returnVal.equals("true")){
+                returnVal = "1";
+            }else if(returnVal.equals("false")){
+                returnVal = "0";
+            }
+            llOutput.write("\tret " + toLlType(lastVisited.method.getReturnType()) + " " + returnVal + "\n");
+        }
 
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
