@@ -194,7 +194,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         lastVisited.method = lastVisited.classRef.findMethod("main");
-        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @" + lastVisited.classRef.getName() + "_main()");
+        llOutput.write("define " + toLlType(lastVisited.method.getReturnType()) + " @main()");
 
         // Allocating vars
         for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
@@ -869,17 +869,12 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             throw new TypeCheckingException("Method " + callingMethod + " is not a member of " + callingClassRef.getName());
         }
 
-        // YOU NEED TO MAKE THIS BETTER
         String callingObjectVar;
-        if(resultVar!=null){
-        if(!callingObject.equals(callingClassRef.name)){
-            callingObjectVar = lastVisited.method.getNewVar();
-            llOutput.write("\n\t" + callingObjectVar + " = load i8*, i8** %" + callingObject + "\n");
+        if(symbolTable.findClass(callingObject) == null){
+            callingObjectVar = loadVar(callingObject);
         }else{
             callingObjectVar = resultVar;
         }
-        }else callingObjectVar = lastVisited.method.getNewVar();
-
         String callingObjectCasted = lastVisited.method.getNewVar(),
                callingObjectLoaded = lastVisited.method.getNewVar(),
                callingObjectPrt = lastVisited.method.getNewVar(),
@@ -888,10 +883,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                callingMethodReturnVar = lastVisited.method.getNewVar();
 
         llOutput.write("\n\t" + callingObjectCasted + " = bitcast i8* " + callingObjectVar + " to i8***\n" +
-                        "\t" + callingObjectLoaded + " = load i8**, i8*** " + callingObjectCasted + "\n" +
-                        "\t" + callingObjectPrt + " = getelementptr i8*, i8** " + callingObjectLoaded + ", i32 " + callingMethodRef.getOffset()/8 + "\n" +
-                        "\t" + callingMethodLoaded + " = load i8*, i8** " + callingObjectPrt + "\n" +
-                        "\t" + callingMethodCasted + " = bitcast i8* " + callingMethodLoaded + " to " + toLlType(callingMethodRef.getReturnType()) + " (i8*");
+                       "\t" + callingObjectLoaded + " = load i8**, i8*** " + callingObjectCasted + "\n" +
+                       "\t" + callingObjectPrt + " = getelementptr i8*, i8** " + callingObjectLoaded + ", i32 " + callingMethodRef.getOffset()/8 + "\n" +
+                       "\t" + callingMethodLoaded + " = load i8*, i8** " + callingObjectPrt + "\n" +
+                       "\t" + callingMethodCasted + " = bitcast i8* " + callingMethodLoaded + " to " + toLlType(callingMethodRef.getReturnType()) + " (i8*");
 
         String argType, methodLLAgrs = "", methodLLAgrsNvalues = "";
         for(int i=0; i < callingMethodRef.getArgsCount(); i++ ){
