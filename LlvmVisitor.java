@@ -530,6 +530,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
             if(!isStaticValue(expr)){
                 loadedVar = lastVisited.method.getNewVar();
+                if(expr.equals("%List"))
+                    System.out.println("stop");
                 llOutput.write("\t" + loadedVar + " = load " + toLlType(exprType) + ", " + toLlType(exprType) + "* %" + expr + "\n");
             }else if(!isType(expr)) loadedVar = expr;
             else  loadedVar = resultVar;
@@ -602,7 +604,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f3.accept(this, argu);
         if(expr==null && resultVar == null)
             System.out.println("stop");
-        if(expr!=null && (symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expr)!=null || lastVisited.method.findArngNVariable(expr)!=null))
+        if(expr!=null && (lastVisited.classRef.findVariable(expr)!=null || lastVisited.method.findArngNVariable(expr)!=null))
             resultVar = loadVar(expr);
         llOutput.write( "\tbr i1 " + resultVar + ", label %if" + labelIf.peek() + ", label %if" + labelElse.peek() + "\n\n");
         llOutput.write("if"+labelIf.poll()+":\n");
@@ -706,7 +708,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         llOutput.write("\tbr label %" + andclause1 + "\n" + 
                        andclause1 + ":\n" +
                        "\tbr i1 " + clause1Result1 + ", label %" +  andclause2 + " , label %" + andclause4 + "\n" +
-                       andclause2 + "\n");
+                       andclause2 + ":\n");
 
         n.f1.accept(this, argu);
         String clause2 = n.f2.accept(this, argu);
@@ -775,6 +777,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         }else{ // we have a local variable so we can load it directly
             var = "%" + var;
         }
+
+        if(var.equals("%List"))
+            System.out.println("stop");
 
         loadedVar = lastVisited.method.getNewVar();
 
@@ -951,7 +956,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
         for(int i=0; i < callingMethodRef.getArgsCount(); i++ ){
             argType = callingMethodRef.findNArng(i);
-            if(!isStaticValue( argumentList.get(i) )){
+            if(resultVar != null){
+                arg = resultVar;
+                resultVar = null;
+            } else if(!isStaticValue( argumentList.get(i) )){
                 arg = loadVar(argumentList.get(i));
             }else arg = argumentList.get(i);
             methodLLAgrsNvalues += ", " + toLlType(argType) + " " + arg;
