@@ -143,7 +143,7 @@ public class ClassData {
         parentsList.add(this);
     }
 
-    public int getNumberOfNonOverridingMethods() {
+    public int getNumberOfNonOverridingMethods(boolean checkParrent /*Ignored in simple class data*/) {
         int s=0;
         for (Map.Entry<String,MethodData> entry : methodMap.entrySet()){
             if(!entry.getValue().overrides())

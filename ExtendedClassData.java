@@ -16,6 +16,7 @@ public class ExtendedClassData extends ClassData {
         currentVariableOffset = givenParrentClassRef.getVariableOffset();
     }
 
+    @Override
     public MethodData findMethod(String methodName){
         MethodData method = methodMap.get(methodName);
         if(method != null){
@@ -26,6 +27,7 @@ public class ExtendedClassData extends ClassData {
         }
     }
 
+    @Override
     public ClassData findMethodClass(String methodName){
         if(methodMap.get(methodName) != null){
             return this;
@@ -35,6 +37,7 @@ public class ExtendedClassData extends ClassData {
         }
     }
 
+    @Override
     public String findVariable(String variableName){
         tupleTypeOffset typeNoffset = variableMap.get(variableName);
         if( typeNoffset != null){ 
@@ -42,6 +45,17 @@ public class ExtendedClassData extends ClassData {
         }else{
             // If the requested variable was not found, mayby a parrent class has it
             return parrentClassRef.findVariable(variableName);
+        }
+    }
+
+    @Override
+    public int findVariableOffset(String variableName){
+        tupleTypeOffset typeNoffset = variableMap.get(variableName);
+        if( typeNoffset != null){ 
+            return typeNoffset.offset;
+        }else{
+            // If the requested variable was not found, mayby a parrent class has it
+            return parrentClassRef.findVariableOffset(variableName);
         }
     }
 
@@ -64,6 +78,19 @@ public class ExtendedClassData extends ClassData {
         }
 
         return newMethodData;
+    }
+
+    @Override
+    public int getNumberOfNonOverridingMethods(boolean checkParrent) {
+        int s=0;
+        for (Map.Entry<String,MethodData> entry : methodMap.entrySet()){
+            if(!entry.getValue().overrides())
+                s++;
+        }
+        if(checkParrent)
+            return s + parrentClassRef.getNumberOfNonOverridingMethods(true);
+        else
+            return s;
     }
 
     // This methods checks if all the overridings function are valid, since no overloading is allowed

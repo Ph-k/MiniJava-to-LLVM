@@ -96,10 +96,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             if(classData != symbolTable.getMainClassRef() ){
                 // Vtables name, and number of methods
                 parentsList = classData.getParents();
-                numberOfMethods = classData.getNumberOfNonOverridingMethods();
+                numberOfMethods = classData.getNumberOfNonOverridingMethods(false);
 
                 for (i = 0; i < parentsList.size(); i++){
-                    numberOfMethods += parentsList.get(i).getNumberOfNonOverridingMethods();
+                    numberOfMethods += parentsList.get(i).getNumberOfNonOverridingMethods(false);
                 }
 
                 llOutput.write("@." + classEntry.getKey() + "_Vtable = global [" + numberOfMethods + " x i8*] [" );
@@ -538,30 +538,28 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         resultLlType = toLlType(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, var));
 
         if(lastVisited.classRef.findVariable(var)!=null){
-            String loadedVar, pointerToClassVar, castedClassVar,
-                   exprType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expr);
+            String pointerToClassVar, castedClassVar;
             int varOffset = lastVisited.classRef.findVariableOffset(var)+8;
+            System.out.println(var + "@" + lastVisited.classRef.getName() + "." + lastVisited.method.getName());
 
             if(!isStaticValue(expr)){
-                loadedVar = lastVisited.method.getNewVar();
-                if(expr.equals("%List"))
-                    System.out.println("stop");
-                llOutput.write("\t" + var + " = load " + toLlType(exprType) + ", " + toLlType(exprType) + "* " + expr + "\n");
-            }else if(!isType(expr)) loadedVar = expr;
-            else  loadedVar = var;
+                String loadedExpr = lastVisited.method.getNewVar();
+                llOutput.write("\t" + loadedExpr + " = load " + resultLlType + ", " + resultLlType + "* %" + expr + "\n");
+                expr = loadedExpr;
+            }/*else if(!isType(expr)) loadedVar = expr;
+            else  loadedVar = var;*/// IN CASE OF BACK CHECK HERE
 
 
             pointerToClassVar = lastVisited.method.getNewVar();
             castedClassVar = lastVisited.method.getNewVar();
             llOutput.write("\t" + pointerToClassVar + " = getelementptr i8, i8* %this, i32 " + varOffset + "\n" +
-                           "\t" + castedClassVar + " = bitcast i8* " + pointerToClassVar + " to " + toLlType(lastVisited.classRef.findVariable(var)) + "*\n");
+                           "\t" + castedClassVar + " = bitcast i8* " + pointerToClassVar + " to " + resultLlType + "*\n");
             
-            resultLlType = toLlType(lastVisited.classRef.findVariable(var)); var = castedClassVar.substring(1);
+            var = castedClassVar.substring(1);
         }else if(lastVisited.method.findArngNVariable(expr)!=null || lastVisited.classRef.findVariable(expr)!=null){// local expr case
             expr = loadVar(expr);
         }
 
-        //resultVar = loadVar(var);
         //resultLlType = toLlType(var);
 
         llOutput.write("\tstore " + resultLlType + " " + expr + ", " + resultLlType +  "* %" + var + "\n\n");
@@ -645,7 +643,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                        "loop" + labelWhile + ":\n");
         String expr = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
-        if(expr == null){
+        if(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, expr)!=null){
             expr = loadVar(expr);
         }
         llOutput.write("\tbr i1 " + expr + ", label %loop" + labelWhileStart + ", label %loop" +labelWhileEnd + "\n\n" +
@@ -671,6 +669,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String expr = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
+
+        expr = loadVar(expr);
 
         llOutput.write("\tcall void (i32) @print_int(i32 " + expr + ")\n\n");
         return _ret;
@@ -718,11 +718,11 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                        "\tbr label %" + andclause4 + "\n" + 
                        andclause4 + ":\n");
         
-        /*llOutput.write("\t" + andclause4 + "\n" + 
-                       "\t" + "phi");*/
+        String result = lastVisited.method.getNewVar();
+        llOutput.write("\t" + result + " = phi i1 [ 0, %" + andclause1 +  "], [ " + clause2 + ", %" + andclause3 +  "]\n");
 
 
-        return "boolean";
+        return result;
     }
 
     /**
@@ -773,9 +773,6 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         }else{ // we have a local variable so we can load it directly
             var = "%" + var;
         }
-
-        if(var.equals("%_9"))
-            System.out.println("stop");
 
         loadedVar = lastVisited.method.getNewVar();
 
@@ -896,6 +893,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(MessageSend n, Void argu) throws Exception {
+        if(lastVisited.method.getName().equals("Remove"))
+            System.out.println("stop");
         String callingObject = n.f0.accept(this, argu);
         String callingObjectType = returnTypeGLB;
         n.f1.accept(this, argu);
@@ -908,15 +907,15 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
         ClassData callingClassRef = symbolTable.findClass(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, callingObjectType));
         if( callingClassRef == null ){
-            throw new Exception("Class " + callingObject + " has not been declared!");
+            throw new Exception("Class " + callingObjectType + " has not been declared!");
         }
 
         MethodData callingMethodRef = callingClassRef.findMethod(callingMethodType);
         if( callingMethodRef == null ){
-            throw new TypeCheckingException("Method " + callingMethod + " is not a member of " + callingClassRef.getName());
+            throw new TypeCheckingException("Method " + callingMethodType + " is not a member of " + callingClassRef.getName());
         }
 
-        String callingObjectVar = callingObject;
+        String callingObjectVar = loadVar(callingObject);
         String callingObjectCasted = lastVisited.method.getNewVar(),
                callingObjectLoaded = lastVisited.method.getNewVar(),
                callingObjectPrt = lastVisited.method.getNewVar(),
@@ -940,12 +939,13 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
         for(int i=0; i < callingMethodRef.getArgsCount(); i++ ){
             argType = callingMethodRef.findNArng(i);
-            arg = argumentList.get(i);
+            arg = loadVar(argumentList.get(i));
             methodLLAgrsNvalues += ", " + toLlType(argType) + " " + arg;
         }
 
         llOutput.write("\t" + callingMethodReturnVar + " = call " + toLlType(callingMethodRef.getReturnType()) + " " + callingMethodCasted + "(i8* " + callingObjectVar + methodLLAgrsNvalues + ")\n\n");
 
+        returnTypeGLB = callingMethodRef.getReturnType();
         return callingMethodReturnVar;
     }
 
@@ -1125,8 +1125,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         llOutput.write("\n" + 
             "\t" + objectVar + " = call i8* @calloc(i32 1, i32 " + objectSize + ")\n" + 
             "\t" + castedObjectVar + " = bitcast i8* " + objectVar + " to i8***\n" +
-            "\t" + VtablePointer + " = getelementptr [" + classRef.getNumberOfNonOverridingMethods() + " x i8*], " + 
-            "[" + classRef.getNumberOfNonOverridingMethods() + " x i8*]* @." + className + "_Vtable, i32 0, i32 0\n" +
+            "\t" + VtablePointer + " = getelementptr [" + classRef.getNumberOfNonOverridingMethods(true) + " x i8*], " + 
+            "[" + classRef.getNumberOfNonOverridingMethods(true) + " x i8*]* @." + className + "_Vtable, i32 0, i32 0\n" +
             "\tstore i8** " + VtablePointer + ", i8*** " + castedObjectVar + "\n\n"
         );
 
