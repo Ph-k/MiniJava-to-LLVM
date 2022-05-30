@@ -16,9 +16,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
     private List<String> argumentList = new ArrayList<String>();
 
-    private int ifLabelCounter;
-    private Deque<String> labelIf = new ArrayDeque<String>(),
-                          labelElse = new ArrayDeque<String>();
+    private int ifLabelCounter,loopLabelCounter,andClauseLabelCounter;
+    /*private Deque<String> labelIf = new ArrayDeque<String>(),
+                          labelElse = new ArrayDeque<String>();*/
 
     private class ReturnTypeGLB{
         String str;
@@ -90,6 +90,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         ClassData classData;
         int i, numberOfMethods;
         ArrayList<ClassData> parentsList;
+        ifLabelCounter = 0; loopLabelCounter = 0; andClauseLabelCounter = 0;
         //Creating Vtable for each class
         for (Map.Entry<String,ClassData> classEntry : symbolTable.getClassMap().entrySet()){
             classData = classEntry.getValue();
@@ -543,11 +544,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             System.out.println(var + "@" + lastVisited.classRef.getName() + "." + lastVisited.method.getName());
 
             if(!isStaticValue(expr)){
-                String loadedExpr = lastVisited.method.getNewVar();
-                llOutput.write("\t" + loadedExpr + " = load " + resultLlType + ", " + resultLlType + "* %" + expr + "\n");
-                expr = loadedExpr;
+                expr = loadVar(expr);
             }/*else if(!isType(expr)) loadedVar = expr;
-            else  loadedVar = var;*/// IN CASE OF BACK CHECK HERE
+            else  loadedVar = var;*/// IN CASE OF BUG CHECK HERE
 
 
             pointerToClassVar = lastVisited.method.getNewVar();
@@ -603,19 +602,19 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        labelIf.add(Integer.toString(ifLabelCounter++));
-        labelElse.add(Integer.toString(ifLabelCounter++));
+        String labelIf = Integer.toString(ifLabelCounter++);
+        String labelElse = Integer.toString(ifLabelCounter++);
         String labelEnd = Integer.toString(ifLabelCounter++);
         String expr = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         if(expr!=null && (lastVisited.classRef.findVariable(expr)!=null || lastVisited.method.findArngNVariable(expr)!=null))
             expr = loadVar(expr);
-        llOutput.write( "\tbr i1 " + expr + ", label %if" + labelIf.peek() + ", label %if" + labelElse.peek() + "\n\n");
-        llOutput.write("if"+labelIf.poll()+":\n");
+        llOutput.write( "\tbr i1 " + expr + ", label %if" + labelIf + ", label %if" + labelElse + "\n\n");
+        llOutput.write("if"+labelIf+":\n");
         n.f4.accept(this, argu);
         llOutput.write("\n\tbr label %if"+labelEnd+"\n");
         n.f5.accept(this, argu);
-        llOutput.write("if"+labelElse.poll()+":\n");
+        llOutput.write("if"+labelElse+":\n");
         n.f6.accept(this, argu);
         llOutput.write("\n\tbr label %if"+labelEnd+"\n");
 
@@ -636,9 +635,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        String labelWhile = Integer.toString(ifLabelCounter++),
-               labelWhileStart = Integer.toString(ifLabelCounter++),
-               labelWhileEnd = Integer.toString(ifLabelCounter++);
+        String labelWhile = Integer.toString(loopLabelCounter++),
+               labelWhileStart = Integer.toString(loopLabelCounter++),
+               labelWhileEnd = Integer.toString(loopLabelCounter++);
                llOutput.write("\tbr label %loop" + labelWhile + "\n" +
                        "loop" + labelWhile + ":\n");
         String expr = n.f2.accept(this, argu);
@@ -699,10 +698,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(AndExpression n, Void argu) throws Exception {
-        String andclause1 = "andclause" + Integer.toString(ifLabelCounter++),
-               andclause2 = "andclause" + Integer.toString(ifLabelCounter++),
-               andclause3 = "andclause" + Integer.toString(ifLabelCounter++),
-               andclause4 = "andclause" + Integer.toString(ifLabelCounter++);
+        String andclause1 = "andclause" + Integer.toString(andClauseLabelCounter++),
+               andclause2 = "andclause" + Integer.toString(andClauseLabelCounter++),
+               andclause3 = "andclause" + Integer.toString(andClauseLabelCounter++),
+               andclause4 = "andclause" + Integer.toString(andClauseLabelCounter++);
         
         String clause1 = n.f0.accept(this, argu);
         //resultVar = null;
@@ -923,9 +922,11 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                callingMethodCasted = lastVisited.method.getNewVar(),
                callingMethodReturnVar = lastVisited.method.getNewVar();
 
-        llOutput.write("\n\t" + callingObjectCasted + " = bitcast i8* " + callingObjectVar + " to i8***\n" +
+        int offest = callingMethodRef.getOffset()/8;
+        llOutput.write("\n\t; " + callingClassRef.getName() + "." + callingMethodRef.getName() + " : " + offest + "\n" +
+                        "\t" + callingObjectCasted + " = bitcast i8* " + callingObjectVar + " to i8***\n" +
                        "\t" + callingObjectLoaded + " = load i8**, i8*** " + callingObjectCasted + "\n" +
-                       "\t" + callingObjectPrt + " = getelementptr i8*, i8** " + callingObjectLoaded + ", i32 " + callingMethodRef.getOffset()/8 + "\n" +
+                       "\t" + callingObjectPrt + " = getelementptr i8*, i8** " + callingObjectLoaded + ", i32 " + offest + "\n" +
                        "\t" + callingMethodLoaded + " = load i8*, i8** " + callingObjectPrt + "\n" +
                        "\t" + callingMethodCasted + " = bitcast i8* " + callingMethodLoaded + " to " + toLlType(callingMethodRef.getReturnType()) + " (i8*");
 
