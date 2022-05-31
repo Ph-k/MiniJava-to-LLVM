@@ -116,7 +116,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             }
         }
 
-        llOutput.write("declare i8* @calloc(i32, i32)\n" +
+        llOutput.write("%_struct.BooleanArrayType = type { i32, [0 x i1] }\n" + 
+                       "%_struct.IntegerArrayType = type { i32, [0 x i32] }\n" +
+                       "declare i8* @calloc(i32, i32)\n" +
                        "declare i32 @printf(i8*, ...)\n" +
                        "declare void @exit(i32)\n\n" +
                        "@_cint = constant [4 x i8] c\"%d\\0a\\00\"\n" +
@@ -148,7 +150,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             case "int[]":
                 return "i32*";
             case "boolean[]":
-                return "i8*";
+                return "i32*";
             case "void":
                 return "void";
             default:
@@ -586,6 +588,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String expr = n.f5.accept(this, argu);
         n.f6.accept(this, argu);
 
+        String tvar = var;
+        String arrayType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, var);
+
         if(!isStaticValue(var))
             var = loadVar(var);
         
@@ -605,12 +610,23 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
         llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + var + "\n" + 
                        "\t" + indexCheck + " = icmp ult i32 " + index + ", " + loadedIndex + "\n" +
-                       "\tbr i1" + indexCheck + ", label %" + oobLabel1 + ", label %" + oobLabel2 + "\n" +
+                       "\tbr i1 " + indexCheck + ", label %" + oobLabel1 + ", label %" + oobLabel2 + "\n" +
                        "\n" + oobLabel1 + ":\n" +
-                       "\t" + indexVal + " = add i32 " + index + ", 1\n" +
-                       "\t" + arrayPointer + " = getelementptr i32, i32* " + var + ", i32 " + indexVal + "\n" + 
-                       "\tstore i32 " + expr + ", i32* " + arrayPointer + "\n" + 
-                       "\tbr label %" + oobLabel3 + "\n" +
+                       "\t" + indexVal + " = add i32 " + index + ", 1\n");
+
+        if(arrayType.equals("int[]")){
+            llOutput.write("\t" + arrayPointer + " = getelementptr i32, i32* " + var + ", i32 " + indexVal + "\n" +
+                           "\tstore i32 " + expr + ", i32* " + arrayPointer + "\n");
+        }else if(arrayType.equals("boolean[]")){
+            String boolCasted = lastVisited.method.getNewVar();
+            llOutput.write("\t" + arrayPointer + " = getelementptr inbounds i32, i32* " + var + ", i32 " + indexVal + "\n" +
+                           "\t" + boolCasted + " = bitcast i32* " + arrayPointer + " to i1*\n" +
+                           "\tstore i1 " + expr + ", i1* " + boolCasted + "\n");
+        }else{
+            throw new Exception("No type found for array");
+        }
+
+        llOutput.write("\tbr label %" + oobLabel3 + "\n" +
                        "\n" + oobLabel2 + ":\n" +
                        "\t" + "call void @throw_oob()" + "\n" +
                        "\tbr label %" + oobLabel3 + "\n" + 
@@ -891,6 +907,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f1.accept(this, argu);
         String index = n.f2.accept(this, argu);
 
+        String arrayType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, array);
+
         if(!isStaticValue(array))
             array = loadVar(array);
         
@@ -908,9 +926,10 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         oobLabel2 = "oob" + Integer.toString(arrAllocLabelCounter++),
         oobLabel3 = "oob" + Integer.toString(arrAllocLabelCounter++);
 
+        /*
         llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + array + "\n" + 
                        "\t" + indexCheck + " = icmp ult i32 " + index + ", " + loadedIndex + "\n" +
-                       "\tbr i1" + indexCheck + ", label %" + oobLabel1 + ", label %" + oobLabel2 + "\n" +
+                       "\tbr i1 " + indexCheck + ", label %" + oobLabel1 + ", label %" + oobLabel2 + "\n" +
                        "\n" + oobLabel1 + ":\n" +
                        "\t" + indexVal + " = add i32 " + index + ", 1\n" +
                        "\t" + arrayPointer + " = getelementptr i32, i32* " + array + ", i32 " + indexVal + "\n" + 
@@ -920,6 +939,30 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                        "\t" + "call void @throw_oob()" + "\n" +
                        "\tbr label %" + oobLabel3 + "\n" + 
                        oobLabel3 + ":\n");
+        */
+        llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + array + "\n" + 
+                       "\t" + indexCheck + " = icmp ult i32 " + index + ", " + loadedIndex + "\n" +
+                       "\tbr i1 " + indexCheck + ", label %" + oobLabel1 + ", label %" + oobLabel2 + "\n" +
+                       "\n" + oobLabel1 + ":\n" +
+                       "\t" + indexVal + " = add i32 " + index + ", 1\n");
+
+        if(arrayType.equals("int[]")){
+            llOutput.write("\t" + arrayPointer + " = getelementptr i32, i32* " + array + ", i32 " + indexVal + "\n" +
+                           "\t" + loadedVal + " = load i32, i32* " + arrayPointer + "\n");
+        }else if(arrayType.equals("boolean[]")){
+            String boolCasted = lastVisited.method.getNewVar();
+            llOutput.write("\t" + arrayPointer + " = getelementptr inbounds i32, i32* " + array + ", i32 " + indexVal + "\n" +
+                           "\t" + boolCasted + " = bitcast i32* " + arrayPointer + " to i1*\n" +
+                           "\t" + loadedVal + " = load i1, i1* " + boolCasted + "\n");
+        }else{
+            throw new Exception("No type found for array");
+        }
+
+        llOutput.write("\tbr label %" + oobLabel3 + "\n" +
+                       "\n" + oobLabel2 + ":\n" +
+                       "\t" + "call void @throw_oob()" + "\n" +
+                       "\tbr label %" + oobLabel3 + "\n" + 
+                        oobLabel3 + ":\n");
 
         return loadedVal;
     }
@@ -1134,9 +1177,31 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
+        String expr = n.f3.accept(this, argu);
+        if(!isStaticValue(expr))
+            expr = loadVar(expr);
         n.f4.accept(this, argu);
-        return "boolean[]";//return _ret;
+
+        String size = expr,
+               sizeCheck = lastVisited.method.getNewVar(),
+               allocSize = lastVisited.method.getNewVar(),
+               arrAllocLabel1 = "arr_alloc" + Integer.toString(arrAllocLabelCounter++),
+               arrAllocLabel2 = "arr_alloc" + Integer.toString(arrAllocLabelCounter++),
+               allocaedArray = lastVisited.method.getNewVar(),
+               castedArray = lastVisited.method.getNewVar();
+
+        llOutput.write("\n\t" + sizeCheck + " = icmp slt i32 " + size + ", 0\n" +
+                       "\tbr i1 " + sizeCheck + ", label %" + arrAllocLabel1 + ", label %" + arrAllocLabel2 + "\n" +
+                       "\n" + arrAllocLabel1 + ":\n" +
+                       "\tcall void @throw_oob()\n" +
+                       "\tbr label %" + arrAllocLabel2 + "\n" + 
+                       "\n" + arrAllocLabel2 + ":\n" +
+                       "\t" + allocSize + " =  add i32 " + size + ", 1\n" +
+                       "\t" + allocaedArray + " = call i8* @calloc(i32 4, i32 " + allocSize + ")\n" +
+                       "\t" + castedArray + " = bitcast i8* " + allocaedArray + " to i32*\n" +
+                       "\tstore i32 " + size + ", i32* " + castedArray + "\n");
+
+        return castedArray;
     }
 
     /**

@@ -12,3 +12,5 @@ MiniJavaParserConstants.java
 MiniJavaParser.java
 .vscode/
 *.ll
+*.javb
+out
