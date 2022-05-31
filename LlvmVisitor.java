@@ -116,9 +116,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             }
         }
 
-        llOutput.write("%_struct.BooleanArrayType = type { i32, [0 x i1] }\n" + 
-                       "%_struct.IntegerArrayType = type { i32, [0 x i32] }\n" +
-                       "declare i8* @calloc(i32, i32)\n" +
+        llOutput.write("declare i8* @calloc(i32, i32)\n" +
                        "declare i32 @printf(i8*, ...)\n" +
                        "declare void @exit(i32)\n\n" +
                        "@_cint = constant [4 x i8] c\"%d\\0a\\00\"\n" +
@@ -974,10 +972,20 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(ArrayLength n, Void argu) throws Exception {
-        n.f0.accept(this, argu);
+        String array = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return "int";
+
+        if(!isStaticValue(array)){
+            array = loadVar(array);
+        }
+
+        String loadedIndex = lastVisited.method.getNewVar();
+
+        llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + array + "\n" /*+
+                       "\t" + indexVal + " = add i32 " + index + ", 1\n"*/);
+
+        return loadedIndex;
     }
 
     /**
