@@ -1014,6 +1014,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String callingMethod = n.f2.accept(this, argu);
         String callingMethodType = returnTypeGLB;
         n.f3.accept(this, argu);
+        List<String> prevArgumentList = new ArrayList<>(argumentList);
         argumentList.clear(); // Clearing the list before using it again
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
@@ -1061,6 +1062,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         llOutput.write("\t" + callingMethodReturnVar + " = call " + toLlType(callingMethodRef.getReturnType()) + " " + callingMethodCasted + "(i8* " + callingObjectVar + methodLLAgrsNvalues + ")\n\n");
 
         returnTypeGLB = callingMethodRef.getReturnType();
+        argumentList = prevArgumentList;
         return callingMethodReturnVar;
     }
 

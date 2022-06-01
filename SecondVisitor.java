@@ -669,6 +669,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
         n.f1.accept(this, argu);
         String callingMethodName = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        List<String> prevArgumentList = new ArrayList<>(argumentList);
         argumentList.clear(); // Clearing the list before using it again
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
@@ -700,6 +701,7 @@ public class SecondVisitor extends GJDepthFirst<String, Void>{
             }
         } 
 
+        argumentList = prevArgumentList;
         return callingMethodRef.getReturnType();
     }
 
