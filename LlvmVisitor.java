@@ -37,16 +37,18 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     }
 
     private void writeMethod(MethodData methodData, boolean firstItter, String className) throws IOException{
+        if(methodData.getName().equals("main")) return;
         int i;
         String argType;
         String tempString;
             
             // Writing return type
             tempString = "\n\ti8* bitcast (" + toLlType(methodData.getReturnType()) + " (i8*";
-            if(!firstItter)
+            if(!firstItter){
                 tempString = ", " + tempString; // Adding comma if needed
-            else
+            }else{
                 firstItter=false;
+            }
             llOutput.write(tempString);
 
             // And type of args
@@ -59,10 +61,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             llOutput.write(")* @" + className + "." + methodData.getName() + " to i8*)");
     }
 
-    private void writeMethods(ClassData classData, boolean firstItter, ClassData extendedClass) throws Exception{
+    private int writeMethods(ClassData classData, boolean firstItter, ClassData extendedClass, int numberOfMethods) throws Exception{
         MethodData overideMethod;
         ClassData overideClass;
-        int mapSize = classData.getMethodMap().size();
         for (Map.Entry<String,MethodData> methodEntry : classData.getMethodMap().entrySet()){
             if(!methodEntry.getValue().overrides()){
                 if( extendedClass == null ){
@@ -76,11 +77,13 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                         writeMethod(methodEntry.getValue(),firstItter,classData.name);
                     }*/
                 }
-                if(mapSize>1)
+                if(numberOfMethods>1){
                     llOutput.write(",");
-                mapSize--;
+                }
+                numberOfMethods--;
             }
         }
+        return numberOfMethods;
     }
 
     LlvmVisitor(FileWriter givenLlOutput, SymbolTable givenSymbolTable) throws Exception{
@@ -107,9 +110,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
 
                 for (i = 0; i < parentsList.size(); i++){
-                    writeMethods(parentsList.get(i),true,classData);
+                    numberOfMethods = writeMethods(parentsList.get(i),true,classData,numberOfMethods);
                 }
-                writeMethods(classData,true,null);
+                writeMethods(classData,true,null,numberOfMethods);
                 llOutput.write("\n                                ]\n\n");
             }else{
                 llOutput.write("@." + classEntry.getKey() + "_Vtable = global [0 x i8*] []\n\n" );
@@ -749,6 +752,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                andclause4 = "andclause" + Integer.toString(andClauseLabelCounter++);
         
         String clause1 = n.f0.accept(this, argu);
+        if(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, clause1)!=null){
+            clause1 = loadVar(clause1);
+        }
         //resultVar = null;
         llOutput.write("\tbr label %" + andclause1 + "\n" + 
                        andclause1 + ":\n" +
@@ -757,6 +763,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
         n.f1.accept(this, argu);
         String clause2 = n.f2.accept(this, argu);
+        if(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, clause2)!=null){
+            clause2 = loadVar(clause2);
+        }
         llOutput.write("\tbr label %" + andclause3 + "\n" + 
                        andclause3 + ":\n" + 
                        "\tbr label %" + andclause4 + "\n" + 
@@ -835,10 +844,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String expr1,expr2,result;
 
         expr1 = n.f0.accept(this, argu);
+        expr1 = loadVar(expr1);
         n.f1.accept(this, argu);
         expr2 = n.f2.accept(this, argu);
-
-        expr1 = loadVar(expr1);
         expr2 = loadVar(expr2);
 
         result = lastVisited.method.getNewVar();
@@ -1293,8 +1301,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f0.accept(this, argu);
         String clause = n.f1.accept(this, argu);
         String notVar = lastVisited.method.getNewVar();
-        if(lastVisited.method.findArngNVariable(clause)!=null)
-        clause = loadVar(clause);
+        if(lastVisited.method.findArngNVariable(clause)!=null || lastVisited.classRef.findVariable(clause)!=null){
+            clause = loadVar(clause);
+        }
 
         llOutput.write("\t" + notVar + " = xor i1 1, " + clause + "\n");
         //clauseType = symbolTable.findVarType(lastVisited.classRef,lastVisited.method,clauseType);

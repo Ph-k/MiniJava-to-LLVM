@@ -87,10 +87,20 @@ public class ExtendedClassData extends ClassData {
             if(!entry.getValue().overrides())
                 s++;
         }
-        if(checkParrent)
+        if(checkParrent){
             return s + parrentClassRef.getNumberOfNonOverridingMethods(true);
-        else
+        }else{
             return s;
+        }
+    }
+
+    @Override
+    public int getNumberOfMethods(boolean checkParrent) {
+        if(checkParrent){
+            return methodMap.size() + parrentClassRef.getNumberOfMethods(true);
+        }else{
+            return methodMap.size();
+        }
     }
 
     // This methods checks if all the overridings function are valid, since no overloading is allowed

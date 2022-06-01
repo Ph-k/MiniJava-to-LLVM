@@ -146,10 +146,14 @@ public class ClassData {
     public int getNumberOfNonOverridingMethods(boolean checkParrent /*Ignored in simple class data*/) {
         int s=0;
         for (Map.Entry<String,MethodData> entry : methodMap.entrySet()){
-            if(!entry.getValue().overrides())
+            if(!entry.getValue().overrides() && !entry.getKey().equals("main"))
                 s++;
         }
         return s;
+    }
+
+    public int getNumberOfMethods(boolean checkParrent /*Ignored in simple class data*/) {
+        return methodMap.size();
     }
 
     public ClassData findMethodClass(String methodName){
