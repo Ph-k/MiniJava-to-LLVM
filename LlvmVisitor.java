@@ -534,37 +534,24 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(AssignmentStatement n, Void argu) throws Exception {
-        String _ret=null,resultLlType;
+        String _ret=null,resultLlType = null;
         String var = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String expr = n.f2.accept(this, argu);
-        // Class field case
         resultLlType = toLlType(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, var));
 
-        if(lastVisited.classRef.findVariable(var)!=null){
-            String pointerToClassVar, castedClassVar;
-            int varOffset = lastVisited.classRef.findVariableOffset(var)+8;
-            System.out.println(var + "@" + lastVisited.classRef.getName() + "." + lastVisited.method.getName());
-
-            if(!isStaticValue(expr)){
-                expr = loadVar(expr);
-            }/*else if(!isType(expr)) loadedVar = expr;
-            else  loadedVar = var;*/// IN CASE OF BUG CHECK HERE
-
-
-            pointerToClassVar = lastVisited.method.getNewVar();
-            castedClassVar = lastVisited.method.getNewVar();
-            llOutput.write("\t" + pointerToClassVar + " = getelementptr i8, i8* %this, i32 " + varOffset + "\n" +
-                           "\t" + castedClassVar + " = bitcast i8* " + pointerToClassVar + " to " + resultLlType + "*\n");
-            
-            var = castedClassVar.substring(1);
-        }else if(lastVisited.method.findArngNVariable(expr)!=null || lastVisited.classRef.findVariable(expr)!=null){// local expr case
-            expr = loadVar(expr);
+        if( !isStaticValue(var) && var.charAt(0)!='%' ){
+            // If we have a class field, we must load from adress
+            if(lastVisited.classRef.findVariable(var)!=null && lastVisited.method.findArngNVariable(var)==null){
+                var = loadClassVar(var);
+            }else{ // we have a local variable so we can load it directly
+                var = (var.charAt(0)=='%'? var : "%" + var);
+            }
         }
 
-        //resultLlType = toLlType(var);
+        expr = loadVar(expr);
 
-        llOutput.write("\tstore " + resultLlType + " " + expr + ", " + resultLlType +  "* %" + var + "\n\n");
+        llOutput.write("\tstore " + resultLlType + " " + expr + ", " + resultLlType +  "* " + var + "\n\n");
         n.f3.accept(this, argu);
         return _ret;
     }
@@ -821,7 +808,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                varType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, var);
 
         // If we have a class field, we must load from adress
-        if(lastVisited.classRef.findVariable(var)!=null){
+        if(lastVisited.classRef.findVariable(var)!=null && lastVisited.method.findArngNVariable(var)==null){
             var = loadClassVar(var);
         }else{ // we have a local variable so we can load it directly
             var = "%" + var;
@@ -910,6 +897,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
         //String _ret=null;
         String array = n.f0.accept(this, argu);
+        String arrayTypeBackup = returnTypeGLB;
         n.f1.accept(this, argu);
         String index = n.f2.accept(this, argu);
 
@@ -952,14 +940,17 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                        "\n" + oobLabel1 + ":\n" +
                        "\t" + indexVal + " = add i32 " + index + ", 1\n");
 
+        if(!arrayType.equals("int[]") && !arrayType.equals("boolean[]")){
+            arrayType = arrayTypeBackup;
+        }
         if(arrayType.equals("int[]")){
             llOutput.write("\t" + arrayPointer + " = getelementptr i32, i32* " + array + ", i32 " + indexVal + "\n" +
-                           "\t" + loadedVal + " = load i32, i32* " + arrayPointer + "\n");
+                        "\t" + loadedVal + " = load i32, i32* " + arrayPointer + "\n");
         }else if(arrayType.equals("boolean[]")){
             String boolCasted = lastVisited.method.getNewVar();
             llOutput.write("\t" + arrayPointer + " = getelementptr inbounds i32, i32* " + array + ", i32 " + indexVal + "\n" +
-                           "\t" + boolCasted + " = bitcast i32* " + arrayPointer + " to i1*\n" +
-                           "\t" + loadedVal + " = load i1, i1* " + boolCasted + "\n");
+                        "\t" + boolCasted + " = bitcast i32* " + arrayPointer + " to i1*\n" +
+                        "\t" + loadedVal + " = load i1, i1* " + boolCasted + "\n");
         }else{
             throw new Exception("No type found for array");
         }
