@@ -997,8 +997,6 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(MessageSend n, Void argu) throws Exception {
-        if(lastVisited.method.getName().equals("Remove"))
-            System.out.println("stop");
         String callingObject = n.f0.accept(this, argu);
         String callingObjectType = returnTypeGLB;
         n.f1.accept(this, argu);
