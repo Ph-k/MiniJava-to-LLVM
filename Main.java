@@ -14,6 +14,7 @@ public class Main {
 
         boolean performTypeCheck = true;
 
+        // Checking if the user requested not to perform type check
         for(int i=0; i<args.length; i++){
                 if( args[i].equals("--no-type-checking") ){
                     performTypeCheck = false;
@@ -24,7 +25,7 @@ public class Main {
         FileInputStream fis = null;
         // For all the given inputs
         for(int i=0; i<args.length; i++){
-            if( args[i].equals("--no-type-checking") == false ){
+            if( args[i].equals("--no-type-checking") == false ){ // no type checking args is not a file
                 try{
                     System.out.println("\n__________" + args[i] + "__________\n");
                     fis = new FileInputStream(args[i]);
@@ -50,7 +51,7 @@ public class Main {
                         continue;
                     }
 
-                    if( performTypeCheck ){
+                    if( performTypeCheck ){// Perform type checking if the user requested
                         // The same way as above, but now we use the second visitor to perform type checking
                         SecondVisitor eval2 = new SecondVisitor(symbolTable);
                         try{
@@ -66,10 +67,13 @@ public class Main {
                     /*System.out.println("No type erros for program " + args[i] + " were found, offsets:");
                     symbolTable.printOffsets();*/
 
+                    // Getting filename of input
                     String basename = args[i].substring(args[i].lastIndexOf("/") + 1);
 
+                    // Creating output file
                     FileWriter llOuput = new FileWriter(basename.split(".java")[0] + ".ll");
 
+                    // Starting the llvmVisitor which will create the .ll file
                     LlvmVisitor llvmVisitor = new LlvmVisitor(llOuput,symbolTable);
                     root.accept(llvmVisitor, null);
 

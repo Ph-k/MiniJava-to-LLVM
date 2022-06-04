@@ -1,9 +1,7 @@
 import syntaxtree.*;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
@@ -17,25 +15,8 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     private List<String> argumentList = new ArrayList<String>();
 
     private int ifLabelCounter,loopLabelCounter,andClauseLabelCounter,arrAllocLabelCounter;
-    /*private Deque<String> labelIf = new ArrayDeque<String>(),
-                          labelElse = new ArrayDeque<String>();*/
 
-    private class ReturnTypeGLB{
-        String str;
-        public void set(String val){
-            str = val;
-        }
-        public String get(){
-            String ret = str;
-            str = null;
-            return ret;
-        }
-    }
-
-    private boolean isType(String type){
-        return type.equals("boolean") || type.equals("int") || type.equals("boolean[]") || type.equals("int[]");
-    }
-
+    // Writes the declaration of ONE method in .ll
     private void writeMethod(MethodData methodData, boolean firstItter, String className) throws IOException{
         if(methodData.getName().equals("main")) return;
         int i;
@@ -61,6 +42,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             llOutput.write(")* @" + className + "." + methodData.getName() + " to i8*)");
     }
 
+    // Writes the declaration of ALL methods in .ll, using the above function
     private int writeMethods(ClassData classData, boolean firstItter, ClassData extendedClass, int numberOfMethods) throws Exception{
         MethodData overideMethod;
         ClassData overideClass;
@@ -73,9 +55,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
                     overideClass = extendedClass.findMethodClass(methodEntry.getKey());
                     if(overideMethod!=null){
                         writeMethod(overideMethod,firstItter,overideClass.name);
-                    }/*else /*if(methodEntry.getValue().overrides() == false)*//*{
-                        writeMethod(methodEntry.getValue(),firstItter,classData.name);
-                    }*/
+                    }
                 }
                 if(numberOfMethods>1){
                     llOutput.write(",");
@@ -94,7 +74,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         int i, numberOfMethods;
         ArrayList<ClassData> parentsList;
         ifLabelCounter = 0; loopLabelCounter = 0; andClauseLabelCounter = 0; arrAllocLabelCounter = 0;
-        //Creating Vtable for each class
+        // Creating Vtable for each class
         for (Map.Entry<String,ClassData> classEntry : symbolTable.getClassMap().entrySet()){
             classData = classEntry.getValue();
             if(classData != symbolTable.getMainClassRef() ){
@@ -119,6 +99,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
             }
         }
 
+        // Utility functions all programs must have
         llOutput.write("declare i8* @calloc(i32, i32)\n" +
                        "declare i32 @printf(i8*, ...)\n" +
                        "declare void @exit(i32)\n\n" +
@@ -142,6 +123,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
     private LastVisited lastVisited = new LastVisited();
 
+    // Converts java types to ll types
     private String toLlType(String type) {
         switch (type) {
             case "int":
@@ -220,7 +202,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         lastVisited.method = lastVisited.classRef.findMethod("main");
         llOutput.write("define i32 @main(){");
 
-        // Allocating vars
+        // Allocating vars for main
         for (Map.Entry<String,String> entry : lastVisited.method.getVariables().entrySet()){
             llOutput.write("\t%" + entry.getKey() + " = alloca " + toLlType(entry.getValue()) + "\n" );
         }
@@ -374,12 +356,13 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         n.f9.accept(this, argu);
         String returnVal = n.f10.accept(this, argu);
 
-        if(returnVal.equals("true"))
+        if(returnVal.equals("true")){
             returnVal = "1";
-        else if(returnVal.equals("false"))
+        }else if(returnVal.equals("false")){
             returnVal = "0";
-        else
+        }else{
             returnVal = loadVar(returnVal);
+        }
 
         llOutput.write("\tret " + toLlType(lastVisited.method.getReturnType()) + " " + returnVal + "\n");
 
@@ -576,8 +559,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         String expr = n.f5.accept(this, argu);
         n.f6.accept(this, argu);
 
-        String tvar = var;
         String arrayType = symbolTable.findVarType(lastVisited.classRef, lastVisited.method, var);
+
+        // Loading variables if needed
 
         if(!isStaticValue(var))
             var = loadVar(var);
@@ -742,7 +726,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         if(symbolTable.findVarType(lastVisited.classRef, lastVisited.method, clause1)!=null){
             clause1 = loadVar(clause1);
         }
-        //resultVar = null;
+
         llOutput.write("\tbr label %" + andclause1 + "\n" + 
                        andclause1 + ":\n" +
                        "\tbr i1 " + clause1 + ", label %" +  andclause2 + " , label %" + andclause4 + "\n" +
@@ -788,6 +772,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         return result;
     }
 
+    // Loads a class field
     private String loadClassVar(String var) throws Exception {
         int varOffset = lastVisited.classRef.findVariableOffset(var)+8;
 
@@ -801,7 +786,9 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         return castedClassVar;
     }
 
+    // Loads any variable, class field or local
     private String loadVar(String var) throws Exception {
+        // If we were not given a variable, or we were given a register, there is nothing to load
         if(isStaticValue(var) || var.charAt(0)=='%') return var;
 
         String loadedVar,
@@ -909,8 +896,6 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         if(!isStaticValue(index))
             index = loadVar(index);
 
-        
-
         String loadedIndex = lastVisited.method.getNewVar(),
         indexCheck =  lastVisited.method.getNewVar(),
         indexVal =  lastVisited.method.getNewVar(),
@@ -920,20 +905,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         oobLabel2 = "oob" + Integer.toString(arrAllocLabelCounter++),
         oobLabel3 = "oob" + Integer.toString(arrAllocLabelCounter++);
 
-        /*
-        llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + array + "\n" + 
-                       "\t" + indexCheck + " = icmp ult i32 " + index + ", " + loadedIndex + "\n" +
-                       "\tbr i1 " + indexCheck + ", label %" + oobLabel1 + ", label %" + oobLabel2 + "\n" +
-                       "\n" + oobLabel1 + ":\n" +
-                       "\t" + indexVal + " = add i32 " + index + ", 1\n" +
-                       "\t" + arrayPointer + " = getelementptr i32, i32* " + array + ", i32 " + indexVal + "\n" + 
-                       "\t" + loadedVal + " = load i32, i32* " + arrayPointer + "\n" + 
-                       "\tbr label %" + oobLabel3 + "\n" +
-                       "\n" + oobLabel2 + ":\n" +
-                       "\t" + "call void @throw_oob()" + "\n" +
-                       "\tbr label %" + oobLabel3 + "\n" + 
-                       oobLabel3 + ":\n");
-        */
+
         llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + array + "\n" + 
                        "\t" + indexCheck + " = icmp ult i32 " + index + ", " + loadedIndex + "\n" +
                        "\tbr i1 " + indexCheck + ", label %" + oobLabel1 + ", label %" + oobLabel2 + "\n" +
@@ -981,8 +953,7 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
 
         String loadedIndex = lastVisited.method.getNewVar();
 
-        llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + array + "\n" /*+
-                       "\t" + indexVal + " = add i32 " + index + ", 1\n"*/);
+        llOutput.write("\t" + loadedIndex + " = load i32, i32 *" + array + "\n");
 
         return loadedIndex;
     }
@@ -1180,7 +1151,6 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(BooleanArrayAllocationExpression n, Void argu) throws Exception {
-        //String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -1220,7 +1190,6 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
     */
     @Override
     public String visit(IntegerArrayAllocationExpression n, Void argu) throws Exception {
-        //String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -1314,7 +1283,4 @@ public class LlvmVisitor extends GJDepthFirst<String, Void>{
         return expression;
     }
 
-    /*public void close() throws IOException{
-        llOutput.close();
-    }*/
 }
