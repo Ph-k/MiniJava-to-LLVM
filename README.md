@@ -1,5 +1,5 @@
 
-# MiniJava->LLVM_compiler
+# MiniJava -> LLVM compiler
 
 A *very simple* compiler that takes MiniJava code and generates the LLVM intermediate code of it, using visitor patterns
 
