@@ -24,7 +24,7 @@ As already mentioned, the MiniJava compiler is the `Main` java executable found 
 
 Here `[fileX.java]` are MiniJava source code files given as command line arguments. The compiler will perform type checking to the given files, and if the files do not have any type errors, the resulting `[fileX.ll]` source code files will get created in the directory from which the program got executed *(Source if you do not move the Main executable)*.
 
-If you wish to disable the type checking functionality of the compiler, and simply create the .ll files use the `-no-type-checking` argument flag before the MiniJava input files
+If you wish to disable the type checking functionality of the compiler, and simply create the .ll files use the `--no-type-checking` argument flag before the MiniJava input files
 ex *`java Main --no-type-checking [file1.java] [file2.java] ... [fileN.java]`*. But note that disabling the type checking and giving an invalid MiniJava program as input will result in undefined behavior.
 
 #### How to compile the `.ll` files to actual executables?
