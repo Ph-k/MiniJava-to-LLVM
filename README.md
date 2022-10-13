@@ -15,7 +15,7 @@ The MiniJava BNF used in this project can be found [here]( https://cgi.di.uoa.gr
 # Project compilation
 In the source file directory you will find a makefile capable of creating the needed *base* visitor files *(using the JavaCC and JTB jars)* and also compiling the compilers java source code to create the `Main` java executable *(which is the projects MiniJava compiler)*. 
 
-To use the makefile just type `make` in a linux terminal in the source code directory. The only requirement is that you have the JDK installed (the program was tested on openjdk 11.0.15 and oracle's JDK 8)*.
+To use the makefile just type `make` in a linux terminal in the source code directory. The only requirement is that you have the JDK installed *(the program was tested on openjdk 11.0.15 and oracle's JDK 8)*.
 
 # MiniJava Compiler usage
 As already mentioned the MiniJava compiler is the `Main` java executable found in the source directory after executing the makefile. It's usage goes as follows:
