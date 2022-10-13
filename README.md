@@ -8,17 +8,17 @@ A *very simple* compiler that takes MiniJava code and generates the LLVM interme
 
 ## What is MiniJava though?
 
-**In sort**: MiniJava is a subset of Java. It supports classes, fields *(which can only be “protected”)* and methods *(which can only be “public”)* but not global functions. Also, the basic types of MiniJava are limited to int, boolean and arrays of them *(int[], boolean[] respectively)*. Of course the classes defined in MiniJava can contain fields of these basic types or of other classes. Lastly, MiniJava also supports inheritance but does **not** support function overloading.
+**In sort**: MiniJava is a subset of Java. It supports classes, fields *(which can only be “protected”)* and methods *(which can only be “public”)* but not global functions. Also, the basic types of MiniJava are limited to int, boolean and arrays of them *(int[], boolean[] respectively)*. Of course, the classes defined in MiniJava can contain fields of these basic types or of other classes. Lastly, MiniJava also supports inheritance but does **not** support function overloading.
 
 The MiniJava BNF used in this project can be found [here]( https://cgi.di.uoa.gr/~compilers/project_files/minijava-new-2022/minijava.html) 
 
 # Project compilation
-In the source file directory you will find a makefile capable of creating the needed *base* visitor files *(using the JavaCC and JTB jars)* and also compiling the compilers java source code to create the `Main` java executable *(which is the projects MiniJava compiler)*. 
+In the source file directory, you will find a makefile capable of creating the needed *base* visitor files *(using the JavaCC and JTB jars)* and also compiling the compilers java source code to create the `Main` java executable *(which is the projects MiniJava compiler)*. 
 
 To use the makefile just type `make` in a linux terminal in the source code directory. The only requirement is that you have the JDK installed *(the program was tested on openjdk 11.0.15 and oracle's JDK 8)*.
 
 # MiniJava Compiler usage
-As already mentioned the MiniJava compiler is the `Main` java executable found in the source directory after executing the makefile. It's usage goes as follows:
+As already mentioned, the MiniJava compiler is the `Main` java executable found in the source directory after executing the makefile. Its usage goes as follows:
 
 *`java`* `Main [file1.java] [file2.java] ... [fileN.java]`
 
